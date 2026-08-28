@@ -8,30 +8,23 @@
   </head>
   <body>
     <div class="app">
-      <header class="header header--compact">
-        <h1 class="header__title">ZoneDrift</h1>
-      </header>
-
-      <section class="search search--primary" aria-label="Search locations">
-        <label class="search__label" for="search-input">Search locations</label>
+      <header class="app-header">
+        <h1 class="app-header__title">ZoneDrift</h1>
+        <label class="search__label" for="search-input">Search</label>
         <input
           id="search-input"
-          class="search__input search__input--primary"
+          class="search__input search__input--inline"
           type="search"
-          placeholder="Search states, code, region…"
+          placeholder="Search…"
           autocomplete="off"
           spellcheck="false"
         />
-        <p id="status-message" class="status-message hidden" role="status" aria-live="polite"></p>
+      </header>
 
-        <div id="search-results" class="search-results hidden" aria-live="polite">
-          <ul id="search-list" class="search-results__list"></ul>
-          <p id="search-empty" class="empty-state empty-state--compact hidden">
-            No locations match your search.
-          </p>
-        </div>
+      <p id="status-message" class="status-message hidden" role="status" aria-live="polite"></p>
 
-        <div id="zone-picker" class="zone-picker hidden" aria-live="polite"></div>
+      <section id="answer-section" class="answer-section hidden" aria-label="Search answer">
+        <div id="answer-card" class="answer-card"></div>
       </section>
 
       <section class="scrubber scrubber--compact" aria-label="Time scrubber">
@@ -52,11 +45,11 @@
         </div>
       </section>
 
-      <section class="pinned" aria-label="Pinned locations">
-        <h2 class="section-title">Pinned</h2>
-        <div id="pinned-list" class="pinned__list">
+      <section class="saved" aria-label="Saved locations">
+        <h2 class="section-title">Saved</h2>
+        <div id="pinned-list" class="saved__list">
           <p class="empty-state" id="pinned-empty">
-            Search above to add locations
+            No saved locations yet — search to preview a place
           </p>
         </div>
       </section>

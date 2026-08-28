@@ -1,6 +1,5 @@
 /**
- * ZoneDrift popup — Phase 1: storage + location data wired in.
- * Clock rendering arrives in Phase 3.
+ * ZoneDrift popup — Phase 2: time engine wired to pinned cards.
  */
 
 import { resolvePinnedLocations } from './data/locations.js';
@@ -9,8 +8,17 @@ import {
   addPin,
   applyFirstRunDefaults,
   getPins,
+  getPrefs,
   removePin,
 } from './js/storage.js';
+import {
+  formatClock,
+  formatOffsetLabel,
+  formatScrubBadge,
+  formatZoneAbbrev,
+  getDisplayTime,
+  offsetVsLocal,
+} from './js/time-engine.js';
 
 const scrubSlider = document.getElementById('scrub-slider');
 const scrubBadge = document.getElementById('scrub-badge');
@@ -21,28 +29,9 @@ const pinnedList = document.getElementById('pinned-list');
 const pinnedEmpty = document.getElementById('pinned-empty');
 const statusMessage = document.getElementById('status-message');
 
-function formatScrubBadge(hours) {
-  const value = Number(hours);
-
-  if (value === 0) {
-    return 'Now';
-  }
-
-  const sign = value > 0 ? '+' : '-';
-  const abs = Math.abs(value);
-
-  if (abs === 0.5) {
-    return `${sign}30 Minutes`;
-  }
-
-  if (Number.isInteger(abs)) {
-    const unit = abs === 1 ? 'Hour' : 'Hours';
-    return `${sign}${abs} ${unit}`;
-  }
-
-  const whole = Math.floor(abs);
-  return `${sign}${whole}.5 Hours`;
-}
+let cachedPinIds = [];
+let use24Hour = false;
+let tickInterval = null;
 
 function updateScrubUi() {
   const hours = Number(scrubSlider.value);
@@ -66,12 +55,57 @@ function showStatus(message) {
   statusMessage.classList.toggle('hidden', !message);
 }
 
+function stopTick() {
+  if (tickInterval !== null) {
+    clearInterval(tickInterval);
+    tickInterval = null;
+  }
+}
+
+function startTick() {
+  stopTick();
+
+  if (Number(scrubSlider.value) !== 0) {
+    return;
+  }
+
+  tickInterval = setInterval(() => {
+    updatePinnedTimes();
+  }, 1000);
+}
+
+function updatePinnedTimes() {
+  const scrubHours = Number(scrubSlider.value);
+  const displayTime = getDisplayTime(scrubHours);
+  const locations = resolvePinnedLocations(cachedPinIds);
+
+  for (const location of locations) {
+    const card = pinnedList.querySelector(`[data-location-id="${location.id}"]`);
+    if (!card) {
+      continue;
+    }
+
+    const abbrev = formatZoneAbbrev(location.tz, displayTime);
+    card.querySelector('.card__abbrev').textContent = abbrev;
+    card.querySelector('.card__time').textContent = formatClock(
+      location.tz,
+      displayTime,
+      use24Hour,
+    );
+    card.querySelector('.card__offset').textContent = formatOffsetLabel(
+      offsetVsLocal(location.tz, displayTime),
+    );
+  }
+}
+
 function renderPinnedList(pinIds) {
+  cachedPinIds = pinIds;
   const locations = resolvePinnedLocations(pinIds);
   pinnedList.querySelectorAll('.card').forEach((node) => node.remove());
 
   if (locations.length === 0) {
     pinnedEmpty.classList.remove('hidden');
+    stopTick();
     return;
   }
 
@@ -82,16 +116,13 @@ function renderPinnedList(pinIds) {
     card.className = 'card';
     card.dataset.locationId = location.id;
 
-    const note = location.note
-      ? `<p class="card__zone">${location.note}</p>`
-      : `<p class="card__zone">${location.tz}</p>`;
-
     card.innerHTML = `
       <div class="card__body">
-        <h3 class="card__title">${location.name} (${location.code})</h3>
-        ${note}
+        <h3 class="card__title">
+          ${location.name} (${location.code}) · <span class="card__abbrev">—</span>
+        </h3>
         <p class="card__time">—:—:— —</p>
-        <p class="card__offset">Clocks arrive in Phase 3</p>
+        <p class="card__offset">—</p>
       </div>
       <button type="button" class="card__remove" aria-label="Remove ${location.name}">×</button>
     `;
@@ -100,27 +131,60 @@ function renderPinnedList(pinIds) {
       await removePin(location.id);
       const pins = await getPins();
       renderPinnedList(pins);
+      updatePinnedTimes();
+      startTick();
     });
 
     pinnedList.appendChild(card);
   }
+
+  updatePinnedTimes();
+  startTick();
+}
+
+function handleScrubChange() {
+  updateScrubUi();
+  updatePinnedTimes();
+
+  if (Number(scrubSlider.value) === 0) {
+    startTick();
+  } else {
+    stopTick();
+  }
 }
 
 async function initApp() {
+  const prefs = await getPrefs();
+  use24Hour = prefs.use24Hour;
+
   await applyFirstRunDefaults();
   const pins = await getPins();
   renderPinnedList(pins);
   showStatus(pins.length >= MAX_PINS ? `Pin limit reached (${MAX_PINS}).` : '');
 }
 
-scrubSlider.addEventListener('input', updateScrubUi);
+scrubSlider.addEventListener('input', handleScrubChange);
 
 scrubReset.addEventListener('click', () => {
   scrubSlider.value = '0';
-  updateScrubUi();
+  handleScrubChange();
 });
 
 searchInput.addEventListener('input', updateSearchUi);
+
+window.addEventListener('pagehide', stopTick);
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    stopTick();
+    return;
+  }
+
+  if (Number(scrubSlider.value) === 0) {
+    updatePinnedTimes();
+    startTick();
+  }
+});
 
 document.addEventListener('DOMContentLoaded', () => {
   updateScrubUi();
@@ -128,5 +192,4 @@ document.addEventListener('DOMContentLoaded', () => {
   initApp();
 });
 
-// Exported for upcoming search/add flow (Phase 4) and manual verification.
 export { addPin, getPins, renderPinnedList, showStatus };

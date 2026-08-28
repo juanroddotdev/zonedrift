@@ -324,9 +324,9 @@ Match (case-insensitive) on:
 
 ### Phase 4 — Search & Add (½ day)
 
-- [ ] Search input, filter, add list UI
-- [ ] Pin on select; hide/disable pinned in results
-- [ ] Empty states (no pins, no results)
+- [x] Search input, filter, add list UI
+- [x] Pin on select; hide/disable pinned in results
+- [x] Empty states (no pins, no results)
 
 ### Phase 5 — Polish (½ day, optional for v1)
 

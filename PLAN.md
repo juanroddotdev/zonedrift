@@ -278,6 +278,8 @@ Match (case-insensitive) on:
 - Pinnable ids are variant ids (e.g. `us-tx-central`, `us-tx-mountain`)
 - Legacy pin ids migrate automatically via `PIN_ID_MIGRATIONS` in storage
 
+### 8.4 Keyboard (v1.1)
+
 - `/` → focus search
 - `Esc` → clear search, blur
 

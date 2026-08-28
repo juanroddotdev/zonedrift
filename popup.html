@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=360, initial-scale=1" />
+    <title>ZoneDrift</title>
+    <link rel="stylesheet" href="styles/popup.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <h1 class="header__title">ZoneDrift</h1>
+        <p class="header__subtitle">Timezone &amp; Meeting Planner</p>
+      </header>
+
+      <section class="scrubber" aria-label="Time scrubber">
+        <div class="scrubber__row">
+          <span id="scrub-badge" class="scrubber__badge">Now</span>
+          <button id="scrub-reset" type="button" class="btn btn--ghost">Reset to Now</button>
+        </div>
+        <input
+          id="scrub-slider"
+          class="scrubber__slider"
+          type="range"
+          min="-12"
+          max="12"
+          step="0.5"
+          value="0"
+          aria-label="Hours from now"
+          aria-valuetext="Now"
+        />
+      </section>
+
+      <section class="search" aria-label="Search locations">
+        <label class="search__label" for="search-input">Search</label>
+        <input
+          id="search-input"
+          class="search__input"
+          type="search"
+          placeholder="Search states, code, region…"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </section>
+
+      <section class="pinned" aria-label="Pinned locations">
+        <h2 class="section-title">Pinned</h2>
+        <div id="pinned-list" class="pinned__list">
+          <p class="empty-state" id="pinned-empty">
+            Search below to add locations
+          </p>
+        </div>
+      </section>
+
+      <section class="add-list hidden" id="add-section" aria-label="Add locations">
+        <h2 class="section-title">Add</h2>
+        <ul id="add-list" class="add-list__items"></ul>
+      </section>
+    </div>
+
+    <script src="popup.js" type="module"></script>
+  </body>
+</html>

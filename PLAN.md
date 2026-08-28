@@ -299,9 +299,9 @@ Match (case-insensitive) on:
 
 ### Phase 0 — Scaffold (½ day)
 
-- [ ] Create repo layout, `manifest.json`, empty popup shell
-- [ ] `styles/popup.css` dark theme, fixed 360×500 layout
-- [ ] Verify unpacked extension loads in Chrome
+- [x] Create repo layout, `manifest.json`, empty popup shell
+- [x] `styles/popup.css` dark theme, fixed 360×500 layout
+- [x] Verify unpacked extension loads in Chrome
 
 ### Phase 1 — Data & Storage (½ day)
 

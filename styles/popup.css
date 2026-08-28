@@ -1,0 +1,343 @@
+/* ZoneDrift — dark popup theme (360×500) */
+
+:root {
+  --color-bg: #0f1117;
+  --color-surface: #1a1d27;
+  --color-border: #2a2f3a;
+  --color-text: #e8eaed;
+  --color-muted: #9aa0a6;
+  --color-accent: #6c9eff;
+  --color-accent-hover: #8ab4ff;
+  --color-danger: #f28b82;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --popup-width: 360px;
+  --popup-max-height: 500px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: var(--popup-width);
+  max-height: var(--popup-max-height);
+  overflow: hidden;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  width: var(--popup-width);
+  max-height: var(--popup-max-height);
+  padding: 14px 14px 12px;
+  gap: 12px;
+  overflow: hidden;
+}
+
+/* Header */
+
+.header {
+  flex-shrink: 0;
+}
+
+.header__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.header__subtitle {
+  margin: 2px 0 0;
+  color: var(--color-muted);
+  font-size: 11px;
+}
+
+/* Scrubber */
+
+.scrubber {
+  flex-shrink: 0;
+  padding: 10px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.scrubber__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.scrubber__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  background: rgba(108, 158, 255, 0.15);
+  border: 1px solid rgba(108, 158, 255, 0.35);
+  border-radius: 999px;
+  color: var(--color-accent);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.scrubber__slider {
+  width: 100%;
+  height: 4px;
+  margin: 0;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+/* Buttons */
+
+.btn {
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.btn--ghost {
+  padding: 4px 8px;
+  background: transparent;
+  color: var(--color-muted);
+}
+
+.btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text);
+}
+
+.btn--ghost:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Search */
+
+.search {
+  flex-shrink: 0;
+}
+
+.search__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.search__input {
+  width: 100%;
+  padding: 9px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.search__input::placeholder {
+  color: var(--color-muted);
+}
+
+.search__input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(108, 158, 255, 0.2);
+}
+
+/* Section titles */
+
+.section-title {
+  margin: 0 0 8px;
+  color: var(--color-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Pinned list */
+
+.pinned {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.pinned__list {
+  flex: 1;
+  min-height: 0;
+  max-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-right: 2px;
+}
+
+.pinned__list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.pinned__list::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 999px;
+}
+
+.empty-state {
+  margin: 0;
+  padding: 24px 12px;
+  text-align: center;
+  color: var(--color-muted);
+  font-size: 12px;
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+/* Location card (shell placeholder for Phase 3) */
+
+.card {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.card__title {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.card__zone {
+  margin: 0 0 6px;
+  color: var(--color-muted);
+  font-size: 11px;
+}
+
+.card__time {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.card__offset {
+  margin: 0;
+  color: var(--color-accent);
+  font-size: 11px;
+}
+
+.card__remove {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.card__remove:hover {
+  background: rgba(242, 139, 130, 0.12);
+  color: var(--color-danger);
+}
+
+/* Add list */
+
+.add-list.hidden {
+  display: none;
+}
+
+.add-list__items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 120px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.add-list__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+
+.add-list__name {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-text);
+}
+
+.add-list__meta {
+  color: var(--color-muted);
+  font-size: 11px;
+}
+
+.btn--add {
+  padding: 4px 10px;
+  background: rgba(108, 158, 255, 0.15);
+  border: 1px solid rgba(108, 158, 255, 0.35);
+  color: var(--color-accent);
+}
+
+.btn--add:hover {
+  background: rgba(108, 158, 255, 0.25);
+  color: var(--color-accent-hover);
+}
+
+.hidden {
+  display: none !important;
+}

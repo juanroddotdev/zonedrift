@@ -1,9 +1,9 @@
 /**
- * ZoneDrift popup — Phase 4: search and add flow.
+ * ZoneDrift popup — search-first layout with multi-zone picker.
  */
 
-import { resolvePinnedLocations } from './data/locations.js';
-import { filterLocations } from './js/search.js';
+import { getLocationLabel, resolvePinnedLocations } from './data/locations.js';
+import { filterSearchResults } from './js/search.js';
 import {
   MAX_PINS,
   addPin,
@@ -25,9 +25,10 @@ const scrubSlider = document.getElementById('scrub-slider');
 const scrubBadge = document.getElementById('scrub-badge');
 const scrubReset = document.getElementById('scrub-reset');
 const searchInput = document.getElementById('search-input');
-const addSection = document.getElementById('add-section');
-const addList = document.getElementById('add-list');
-const addEmpty = document.getElementById('add-empty');
+const searchResults = document.getElementById('search-results');
+const searchList = document.getElementById('search-list');
+const searchEmpty = document.getElementById('search-empty');
+const zonePicker = document.getElementById('zone-picker');
 const pinnedList = document.getElementById('pinned-list');
 const pinnedEmpty = document.getElementById('pinned-empty');
 const statusMessage = document.getElementById('status-message');
@@ -35,6 +36,7 @@ const statusMessage = document.getElementById('status-message');
 let cachedPinIds = [];
 let use24Hour = false;
 let tickInterval = null;
+let expandedGroupId = null;
 
 function updateScrubUi() {
   const hours = Number(scrubSlider.value);
@@ -54,7 +56,14 @@ function showStatus(message) {
 }
 
 function updatePinLimitStatus(pinIds = cachedPinIds) {
-  showStatus(pinIds.length >= MAX_PINS ? `Pin limit reached (${MAX_PINS}).` : '');
+  if (pinIds.length >= MAX_PINS) {
+    showStatus(`Pin limit reached (${MAX_PINS}).`);
+    return;
+  }
+
+  if (!expandedGroupId) {
+    showStatus('');
+  }
 }
 
 function stopTick() {
@@ -100,52 +109,127 @@ function updatePinnedTimes() {
   }
 }
 
-function renderAddList() {
-  const query = searchInput.value;
-  const hasQuery = query.trim().length > 0;
-  const results = filterLocations(query, cachedPinIds);
+function clearZonePicker() {
+  expandedGroupId = null;
+  zonePicker.classList.add('hidden');
+  zonePicker.innerHTML = '';
+}
+
+function renderZonePicker(groupResult) {
   const displayTime = getDisplayTime(Number(scrubSlider.value));
 
-  addSection.classList.toggle('hidden', !hasQuery);
-  addList.innerHTML = '';
+  zonePicker.classList.remove('hidden');
+  zonePicker.innerHTML = `
+    <div class="zone-picker__card">
+      <div class="zone-picker__header">
+        <p class="zone-picker__title">Where in ${groupResult.name}?</p>
+        <button type="button" class="zone-picker__close" aria-label="Close region picker">×</button>
+      </div>
+      <div class="zone-picker__options"></div>
+    </div>
+  `;
+
+  const options = zonePicker.querySelector('.zone-picker__options');
+
+  for (const location of groupResult.variants) {
+    const option = document.createElement('button');
+    option.type = 'button';
+    option.className = 'zone-picker__option';
+    option.innerHTML = `
+      <span class="zone-picker__option-label">${location.sublabel}</span>
+      <span class="zone-picker__option-meta">${formatZoneAbbrev(location.tz, displayTime)}</span>
+    `;
+    option.addEventListener('click', () => {
+      handleAddPin(location.id);
+    });
+    options.appendChild(option);
+  }
+
+  zonePicker.querySelector('.zone-picker__close').addEventListener('click', () => {
+    clearZonePicker();
+    renderSearchResults();
+  });
+}
+
+function renderSearchResults() {
+  const query = searchInput.value;
+  const hasQuery = query.trim().length > 0;
+  const results = filterSearchResults(query, cachedPinIds);
+  const displayTime = getDisplayTime(Number(scrubSlider.value));
+
+  searchResults.classList.toggle('hidden', !hasQuery);
+  searchList.innerHTML = '';
 
   if (!hasQuery) {
-    addEmpty.classList.add('hidden');
+    searchEmpty.classList.add('hidden');
+    clearZonePicker();
     return;
   }
 
-  addEmpty.classList.toggle('hidden', results.length > 0);
+  if (expandedGroupId && !results.some((result) => result.type === 'group' && result.groupId === expandedGroupId)) {
+    clearZonePicker();
+  }
 
-  for (const location of results) {
+  searchEmpty.classList.toggle('hidden', results.length > 0);
+
+  for (const result of results) {
     const item = document.createElement('li');
-    item.className = 'add-list__item';
 
-    const zoneLabel = formatZoneAbbrev(location.tz, displayTime);
-    item.innerHTML = `
-      <div class="add-list__info">
-        <span class="add-list__name">${location.name} (${location.code})</span>
-        <span class="add-list__meta">${zoneLabel}</span>
-      </div>
-      <button type="button" class="btn btn--add" aria-label="Add ${location.name}">+</button>
-    `;
+    if (result.type === 'single') {
+      const { location } = result;
+      const zoneLabel = formatZoneAbbrev(location.tz, displayTime);
 
-    const handleAdd = () => {
-      handleAddPin(location.id);
-    };
+      item.className = 'search-results__item';
+      item.innerHTML = `
+        <div class="search-results__info">
+          <span class="search-results__name">${location.name} (${location.code})</span>
+          <span class="search-results__meta">${zoneLabel}</span>
+        </div>
+        <span class="search-results__action">+</span>
+      `;
 
-    item.addEventListener('click', (event) => {
-      if (event.target.closest('.btn--add')) {
-        return;
-      }
-      handleAdd();
-    });
+      item.addEventListener('click', () => {
+        handleAddPin(location.id);
+      });
+    } else {
+      const isExpanded = expandedGroupId === result.groupId;
+      const variantCount = result.variants.length;
 
-    item.querySelector('.btn--add').addEventListener('click', (event) => {
-      event.stopPropagation();
-      handleAdd();
-    });
+      item.className = `search-results__item search-results__item--group${isExpanded ? ' is-expanded' : ''}`;
+      item.innerHTML = `
+        <div class="search-results__info">
+          <span class="search-results__name">${result.name} (${result.code})</span>
+          <span class="search-results__meta">${variantCount} time zones</span>
+        </div>
+        <span class="search-results__action">›</span>
+      `;
 
-    addList.appendChild(item);
+      item.addEventListener('click', () => {
+        if (expandedGroupId === result.groupId) {
+          clearZonePicker();
+        } else {
+          expandedGroupId = result.groupId;
+        }
+        renderSearchResults();
+      });
+    }
+
+    searchList.appendChild(item);
+  }
+
+  if (expandedGroupId) {
+    const activeGroup = results.find(
+      (result) => result.type === 'group' && result.groupId === expandedGroupId,
+    );
+
+    if (activeGroup) {
+      renderZonePicker(activeGroup);
+    } else {
+      clearZonePicker();
+    }
+  } else {
+    zonePicker.classList.add('hidden');
+    zonePicker.innerHTML = '';
   }
 }
 
@@ -160,8 +244,9 @@ async function handleAddPin(locationId) {
   }
 
   cachedPinIds = await getPins();
+  clearZonePicker();
   renderPinnedList(cachedPinIds);
-  renderAddList();
+  renderSearchResults();
   updatePinLimitStatus(cachedPinIds);
 
   const card = pinnedList.querySelector(`[data-location-id="${locationId}"]`);
@@ -176,7 +261,7 @@ function renderPinnedList(pinIds) {
   if (locations.length === 0) {
     pinnedEmpty.classList.remove('hidden');
     stopTick();
-    renderAddList();
+    renderSearchResults();
     return;
   }
 
@@ -186,11 +271,12 @@ function renderPinnedList(pinIds) {
     const card = document.createElement('article');
     card.className = 'card';
     card.dataset.locationId = location.id;
+    const label = getLocationLabel(location);
 
     card.innerHTML = `
       <div class="card__body">
         <h3 class="card__title">
-          ${location.name} (${location.code}) · <span class="card__abbrev">—</span>
+          ${label} · <span class="card__abbrev">—</span>
         </h3>
         <p class="card__time">—:—:— —</p>
         <p class="card__offset">—</p>
@@ -204,6 +290,7 @@ function renderPinnedList(pinIds) {
       renderPinnedList(pins);
       updatePinnedTimes();
       startTick();
+      renderSearchResults();
       updatePinLimitStatus(pins);
     });
 
@@ -217,13 +304,19 @@ function renderPinnedList(pinIds) {
 function handleScrubChange() {
   updateScrubUi();
   updatePinnedTimes();
-  renderAddList();
+  renderSearchResults();
 
   if (Number(scrubSlider.value) === 0) {
     startTick();
   } else {
     stopTick();
   }
+}
+
+function handleSearchInput() {
+  clearZonePicker();
+  renderSearchResults();
+  updatePinLimitStatus();
 }
 
 async function initApp() {
@@ -243,7 +336,7 @@ scrubReset.addEventListener('click', () => {
   handleScrubChange();
 });
 
-searchInput.addEventListener('input', renderAddList);
+searchInput.addEventListener('input', handleSearchInput);
 
 window.addEventListener('pagehide', stopTick);
 

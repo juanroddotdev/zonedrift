@@ -3,7 +3,8 @@
  * Run: node scripts/verify-search.mjs
  */
 
-import { filterLocations } from '../js/search.js';
+import { LOCATIONS } from '../data/locations.js';
+import { filterLocations, filterSearchResults } from '../js/search.js';
 
 let failures = 0;
 
@@ -17,9 +18,13 @@ function assert(condition, message) {
   console.log(`ok: ${message}`);
 }
 
-const txResults = filterLocations('tx', []);
-assert(txResults.length === 1, 'search "tx" finds Texas');
-assert(txResults[0].code === 'TX', 'Texas result has TX code');
+const texasGroup = filterSearchResults('tx', []);
+assert(texasGroup.length === 1, 'search "tx" finds one catalog entry');
+assert(texasGroup[0].type === 'group', 'Texas is a multi-zone group');
+assert(texasGroup[0].variants.length === 2, 'Texas has two timezone variants');
+
+const texasVariants = filterLocations('tx', []);
+assert(texasVariants.length === 2, 'filterLocations returns both Texas variants');
 
 const midwestResults = filterLocations('midwest', []);
 assert(midwestResults.length > 0, 'search "midwest" returns results');
@@ -32,11 +37,13 @@ const pinned = ['us-ca', 'us-ny'];
 const unpinnedWest = filterLocations('west', pinned);
 assert(!unpinnedWest.some((loc) => pinned.includes(loc.id)), 'pinned ids excluded');
 
-const noResults = filterLocations('zzzz', []);
+const noResults = filterSearchResults('zzzz', []);
 assert(noResults.length === 0, 'nonsense query returns empty');
 
-const noteMatch = filterLocations('panhandle', []);
-assert(noteMatch.some((loc) => loc.code === 'FL'), 'note keyword finds Florida');
+const floridaGroup = filterSearchResults('florida', []);
+assert(floridaGroup[0]?.type === 'group', 'Florida resolves as a multi-zone group');
+
+assert(LOCATIONS.length === 62, 'location catalog has 62 pinnable entries');
 
 if (failures > 0) {
   process.exitCode = 1;

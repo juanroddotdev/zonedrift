@@ -164,31 +164,36 @@ Store **ids only** in `chrome.storage.local`; resolve full objects from `locatio
 
 ```
 ┌─────────────────────────────────────┐
-│ ZoneDrift                    [dark] │
+│ ZoneDrift                           │
 ├─────────────────────────────────────┤
-│ [ Now ▼ ]  ═══════●══════  [Reset]  │  ← scrubber + badge + reset
+│ 🔍 [ Search states, code, region… ] │  ← primary, large input
+│ ┌ search results (under bar) ─────┐ │
+│ │ California (CA)            [+]  │ │
+│ │ Texas (TX) · 2 time zones    [›] │ │
+│ └─────────────────────────────────┘ │
+│ ┌ Where in Texas? ───────────── [×] │  ← inline zone picker
+│ │ [ Most of Texas · CST ]         │ │
+│ │ [ El Paso area · MST ]          │ │
+│ └─────────────────────────────────┘ │
 ├─────────────────────────────────────┤
-│ 🔍 Search states, code, region…     │
+│ [Now] ═══●═══ [Reset]               │  ← compact scrubber
 ├─────────────────────────────────────┤
 │ PINNED (scroll)                     │
 │ ┌─────────────────────────────┐ [×] │
-│ │ Texas (TX) · CDT            │     │
+│ │ Texas (TX) · Most · CDT     │     │
 │ │ 2:34:05 PM                  │     │
 │ │ +1 hr vs you                │     │
 │ └─────────────────────────────┘     │
-│ …                                   │
-├─────────────────────────────────────┤
-│ ADD (when search non-empty)         │
-│ · California (CA) — Pacific    [+]  │
-│ · Florida (FL) — Eastern       [+]  │
 └─────────────────────────────────────┘
 ```
 
 ### 6.1 Sections
 
-- **Pinned:** always visible; scrollable (`max-height` ~280px)
-- **Add list:** only when search query length ≥ 1; filters seed data
-- Pinned cards **not** filtered by search
+- **Search:** primary entry point; large input at top
+- **Results:** directly under search bar when query is non-empty
+- **Zone picker:** inline expanded card for multi-zone states (not a second search)
+- **Scrubber:** compact row below search/results; affects pinned clocks only
+- **Pinned:** scrollable watchlist at bottom
 
 ### 6.2 Scrubber
 
@@ -261,12 +266,17 @@ Match (case-insensitive) on:
 
 ### 8.2 Add Flow
 
-1. User types → show filtered **unpinned** results (hide already pinned)
-2. Click row or `[+]` → append `id` to `pins` if under cap and not duplicate
-3. Keep query after pin; mark row as pinned/disabled
-4. Scroll pinned list to new card (nice-to-have)
+1. User types → show filtered results directly under the search bar
+2. **Single-zone state:** click row → pin immediately
+3. **Multi-zone state:** click row → inline **"Where in {State}?"** picker with labeled options
+4. Select option → pin variant `id`; keep search query; hide pinned variants from results
+5. Scroll pinned list to new card (nice-to-have)
 
-### 8.3 Keyboard (v1.1)
+### 8.3 Multi-Zone Disambiguation
+
+- Search catalog has 50 entries (one per state); 12 states expose 2 timezone variants each
+- Pinnable ids are variant ids (e.g. `us-tx-central`, `us-tx-mountain`)
+- Legacy pin ids migrate automatically via `PIN_ID_MIGRATIONS` in storage
 
 - `/` → focus search
 - `Esc` → clear search, blur

@@ -1,8 +1,23 @@
-import { getOnboardingPinIds } from '../data/locations.js';
+import { getLocationById, getOnboardingPinIds, migratePinId } from '../data/locations.js';
 
 export const MAX_PINS = 12;
 
 const STORAGE_KEYS = ['pins', 'use24Hour', 'defaultPinsApplied'];
+
+function normalizePins(pins) {
+  const seen = new Set();
+
+  return pins
+    .map((id) => migratePinId(id))
+    .filter((id) => {
+      if (!getLocationById(id) || seen.has(id)) {
+        return false;
+      }
+
+      seen.add(id);
+      return true;
+    });
+}
 
 function readStorage() {
   return new Promise((resolve, reject) => {
@@ -40,7 +55,13 @@ export async function getPrefs() {
 
 export async function getPins() {
   const { pins } = await readStorage();
-  return pins;
+  const normalized = normalizePins(pins);
+
+  if (normalized.length !== pins.length || normalized.some((id, index) => id !== pins[index])) {
+    await writeStorage({ pins: normalized });
+  }
+
+  return normalized;
 }
 
 export async function setPins(pins) {
@@ -55,13 +76,15 @@ export async function setPrefs(partial) {
  * @returns {Promise<{ ok: true } | { ok: false, reason: 'duplicate' | 'max' | 'invalid' }>}
  */
 export async function addPin(id) {
-  if (!id) {
+  const locationId = migratePinId(id);
+
+  if (!locationId || !getLocationById(locationId)) {
     return { ok: false, reason: 'invalid' };
   }
 
-  const { pins } = await readStorage();
+  const pins = await getPins();
 
-  if (pins.includes(id)) {
+  if (pins.includes(locationId)) {
     return { ok: false, reason: 'duplicate' };
   }
 
@@ -69,7 +92,7 @@ export async function addPin(id) {
     return { ok: false, reason: 'max' };
   }
 
-  await writeStorage({ pins: [...pins, id] });
+  await writeStorage({ pins: [...pins, locationId] });
   return { ok: true };
 }
 

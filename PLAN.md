@@ -311,16 +311,16 @@ Match (case-insensitive) on:
 
 ### Phase 2 — Time Engine (½ day)
 
-- [ ] `getDisplayTime`, formatters, `offsetVsLocal`
-- [ ] Verify against DST boundaries (March/November) for `America/New_York`
-- [ ] Scrub badge formatter (0, ±0.5, integers, half-hours)
+- [x] `getDisplayTime`, formatters, `offsetVsLocal`
+- [x] Verify against DST boundaries (March/November) for `America/New_York`
+- [x] Scrub badge formatter (0, ±0.5, integers, half-hours)
 
 ### Phase 3 — Core UI (1 day)
 
-- [ ] Scrubber + reset + badge
-- [ ] Pinned cards render + remove
-- [ ] Interval start/stop tied to scrub === 0
-- [ ] Popup teardown clears interval
+- [x] Scrubber + reset + badge
+- [x] Pinned cards render + remove
+- [x] Interval start/stop tied to scrub === 0
+- [x] Popup teardown clears interval
 
 ### Phase 4 — Search & Add (½ day)
 

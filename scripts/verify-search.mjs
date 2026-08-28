@@ -18,6 +18,14 @@ function assert(condition, message) {
   console.log(`ok: ${message}`);
 }
 
+const california = filterSearchResults('california', []);
+assert(california.length === 1, 'search "california" finds California');
+assert(california[0].type === 'single', 'California is a single-zone result');
+assert(california[0].location.code === 'CA', 'California result has CA code');
+
+const californiaPinned = filterSearchResults('california', ['us-ca']);
+assert(californiaPinned.length === 1, 'lookup still finds California when already saved');
+
 const texasGroup = filterSearchResults('tx', []);
 assert(texasGroup.length === 1, 'search "tx" finds one catalog entry');
 assert(texasGroup[0].type === 'group', 'Texas is a multi-zone group');
@@ -35,7 +43,7 @@ assert(
 
 const pinned = ['us-ca', 'us-ny'];
 const unpinnedWest = filterLocations('west', pinned);
-assert(!unpinnedWest.some((loc) => pinned.includes(loc.id)), 'pinned ids excluded');
+assert(!unpinnedWest.some((loc) => pinned.includes(loc.id)), 'pinned ids excluded from unpinned filter');
 
 const noResults = filterSearchResults('zzzz', []);
 assert(noResults.length === 0, 'nonsense query returns empty');

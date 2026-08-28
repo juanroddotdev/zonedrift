@@ -202,7 +202,7 @@ function renderAnswerCard() {
   }
 
   answerSection.classList.remove('hidden');
-  const results = filterSearchResults(query, cachedPinIds);
+  const results = filterSearchResults(query);
 
   if (results.length === 0) {
     answerCard.innerHTML = '<p class="answer-card__empty">No locations match your search.</p>';

@@ -305,9 +305,9 @@ Match (case-insensitive) on:
 
 ### Phase 1 — Data & Storage (½ day)
 
-- [ ] `data/locations.js`: 50 states with IANA `tz`, `id`, `region`, `note` where needed
-- [ ] Storage helpers: `getPins`, `setPins`, `getPrefs`, first-run defaults
-- [ ] Dedupe + max 12 enforcement
+- [x] `data/locations.js`: 50 states with IANA `tz`, `id`, `region`, `note` where needed
+- [x] Storage helpers: `getPins`, `setPins`, `getPrefs`, first-run defaults
+- [x] Dedupe + max 12 enforcement
 
 ### Phase 2 — Time Engine (½ day)
 

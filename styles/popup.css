@@ -174,6 +174,16 @@ body {
   box-shadow: 0 0 0 2px rgba(108, 158, 255, 0.2);
 }
 
+.status-message {
+  margin: 6px 0 0;
+  color: var(--color-danger);
+  font-size: 11px;
+}
+
+.status-message.hidden {
+  display: none;
+}
+
 /* Section titles */
 
 .section-title {

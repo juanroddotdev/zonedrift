@@ -1,13 +1,25 @@
 /**
- * ZoneDrift popup — Phase 0 shell.
- * Time engine, storage, and search arrive in later phases.
+ * ZoneDrift popup — Phase 1: storage + location data wired in.
+ * Clock rendering arrives in Phase 3.
  */
+
+import { resolvePinnedLocations } from './data/locations.js';
+import {
+  MAX_PINS,
+  addPin,
+  applyFirstRunDefaults,
+  getPins,
+  removePin,
+} from './js/storage.js';
 
 const scrubSlider = document.getElementById('scrub-slider');
 const scrubBadge = document.getElementById('scrub-badge');
 const scrubReset = document.getElementById('scrub-reset');
 const searchInput = document.getElementById('search-input');
 const addSection = document.getElementById('add-section');
+const pinnedList = document.getElementById('pinned-list');
+const pinnedEmpty = document.getElementById('pinned-empty');
+const statusMessage = document.getElementById('status-message');
 
 function formatScrubBadge(hours) {
   const value = Number(hours);
@@ -45,6 +57,62 @@ function updateSearchUi() {
   addSection.classList.toggle('hidden', !hasQuery);
 }
 
+function showStatus(message) {
+  if (!statusMessage) {
+    return;
+  }
+
+  statusMessage.textContent = message;
+  statusMessage.classList.toggle('hidden', !message);
+}
+
+function renderPinnedList(pinIds) {
+  const locations = resolvePinnedLocations(pinIds);
+  pinnedList.querySelectorAll('.card').forEach((node) => node.remove());
+
+  if (locations.length === 0) {
+    pinnedEmpty.classList.remove('hidden');
+    return;
+  }
+
+  pinnedEmpty.classList.add('hidden');
+
+  for (const location of locations) {
+    const card = document.createElement('article');
+    card.className = 'card';
+    card.dataset.locationId = location.id;
+
+    const note = location.note
+      ? `<p class="card__zone">${location.note}</p>`
+      : `<p class="card__zone">${location.tz}</p>`;
+
+    card.innerHTML = `
+      <div class="card__body">
+        <h3 class="card__title">${location.name} (${location.code})</h3>
+        ${note}
+        <p class="card__time">—:—:— —</p>
+        <p class="card__offset">Clocks arrive in Phase 3</p>
+      </div>
+      <button type="button" class="card__remove" aria-label="Remove ${location.name}">×</button>
+    `;
+
+    card.querySelector('.card__remove').addEventListener('click', async () => {
+      await removePin(location.id);
+      const pins = await getPins();
+      renderPinnedList(pins);
+    });
+
+    pinnedList.appendChild(card);
+  }
+}
+
+async function initApp() {
+  await applyFirstRunDefaults();
+  const pins = await getPins();
+  renderPinnedList(pins);
+  showStatus(pins.length >= MAX_PINS ? `Pin limit reached (${MAX_PINS}).` : '');
+}
+
 scrubSlider.addEventListener('input', updateScrubUi);
 
 scrubReset.addEventListener('click', () => {
@@ -57,4 +125,8 @@ searchInput.addEventListener('input', updateSearchUi);
 document.addEventListener('DOMContentLoaded', () => {
   updateScrubUi();
   updateSearchUi();
+  initApp();
 });
+
+// Exported for upcoming search/add flow (Phase 4) and manual verification.
+export { addPin, getPins, renderPinnedList, showStatus };

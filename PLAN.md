@@ -162,40 +162,57 @@ Store **ids only** in `chrome.storage.local`; resolve full objects from `locatio
 
 ## 6. UI Layout (360×500, Dark)
 
+**Mental model:** Open to see saved go-tos. Search is a small lookup at the top; typing shows a single answer card — not a dropdown list. Pinning is always explicit.
+
 ```
 ┌─────────────────────────────────────┐
-│ ZoneDrift                           │
+│ ZoneDrift          [ search…     ]  │  ← compact search, top-right
 ├─────────────────────────────────────┤
-│ 🔍 [ Search states, code, region… ] │  ← primary, large input
-│ ┌ search results (under bar) ─────┐ │
-│ │ California (CA)            [+]  │ │
-│ │ Texas (TX) · 2 time zones    [›] │ │
-│ └─────────────────────────────────┘ │
-│ ┌ Where in Texas? ───────────── [×] │  ← inline zone picker
-│ │ [ Most of Texas · CST ]         │ │
-│ │ [ El Paso area · MST ]          │ │
-│ └─────────────────────────────────┘ │
+│ ┌ ANSWER (only when typing) ────┐   │
+│ │ California (CA) · PDT           │   │
+│ │ 2:34:05 PM                      │   │
+│ │ +3 hrs vs you          [ Pin ]  │   │  ← preview only; Pin is explicit
+│ └─────────────────────────────────┘   │
+│   — or for multi-zone —               │
+│ ┌ ANSWER ─────────────────────────┐   │
+│ │ Where in Texas?                   │   │
+│ │ [ Most of Texas · 1:34 PM ] Pin  │   │
+│ │ [ El Paso area · 12:34 PM ] Pin  │   │
+│ └─────────────────────────────────┘   │
 ├─────────────────────────────────────┤
 │ [Now] ═══●═══ [Reset]               │  ← compact scrubber
 ├─────────────────────────────────────┤
-│ PINNED (scroll)                     │
-│ ┌─────────────────────────────┐ [×] │
-│ │ Texas (TX) · Most · CDT     │     │
-│ │ 2:34:05 PM                  │     │
-│ │ +1 hr vs you                │     │
-│ └─────────────────────────────┘     │
+│ SAVED                               │
+│ ┌ California (CA) · PDT ────── [×]  │
+│ │ 2:34:05 PM · +3 hrs vs you       │
+│ ┌ New York (NY) · EDT ──────── [×]  │
+│ │ …                                 │
 └─────────────────────────────────────┘
 ```
 
-### 6.1 Sections
+### 6.1 Sections (top to bottom)
 
-- **Search:** primary entry point; large input at top
-- **Results:** directly under search bar when query is non-empty
-- **Zone picker:** inline expanded card for multi-zone states (not a second search)
-- **Scrubber:** compact row below search/results; affects pinned clocks only
-- **Pinned:** scrollable watchlist at bottom
+1. **Header + compact search** — title left, small search input right
+2. **Answer card** — appears only when query is non-empty; top search match; never auto-pins
+3. **Scrubber** — compact; shifts answer card + saved clocks together
+4. **Saved** — pinned watchlist; always visible; primary view on open
 
-### 6.2 Scrubber
+### 6.2 Default open behavior
+
+- User sees **Saved** list immediately (their go-tos)
+- Search field is empty → no answer card
+- Empty saved state: *"No saved locations yet — search to preview a place"*
+
+### 6.3 Answer card rules
+
+- Show **top match** from search catalog (not a scrollable result list)
+- Display live clock, zone abbrev, and offset vs user at `displayTime`
+- **Pin** button adds to Saved; row/body tap does **not** pin
+- Multi-zone state: one answer card with **Where in {State}?** and per-variant rows (time + Pin)
+- If already pinned: show answer but hide/disable Pin
+- No match: compact "No locations match" message in answer area
+
+### 6.4 Scrubber
 
 - `input type="range"`: `min=-12`, `max=12`, `step=0.5`
 - Badge text:
@@ -205,7 +222,7 @@ Store **ids only** in `chrome.storage.local`; resolve full objects from `locatio
   - half beyond ±1 → **"+2.5 Hours"**
 - **Reset to Now:** sets slider to `0`, restarts tick interval
 
-### 6.3 Card Fields
+### 6.5 Saved card fields
 
 - **Title:** `name` + `(code)`
 - **Zone:** from `Intl` `timeZoneName: 'short'` at `displayTime` — label **"Zone"**, not "Standard"
@@ -264,15 +281,16 @@ Match (case-insensitive) on:
 - `region` (e.g. "South", "West")
 - Optional: `note` keywords
 
-### 8.2 Add Flow
+### 8.2 Lookup & pin flow
 
-1. User types → show filtered results directly under the search bar
-2. **Single-zone state:** click row → pin immediately
-3. **Multi-zone state:** click row → inline **"Where in {State}?"** picker with labeled options
-4. Select option → pin variant `id`; keep search query; hide pinned variants from results
-5. Scroll pinned list to new card (nice-to-have)
+1. User opens popup → **Saved** list is visible immediately
+2. User types in compact search → **answer card** appears under header (top match only)
+3. Answer card shows time/zone/offset — **lookup only**, no auto-pin
+4. User taps **Pin** → append to Saved if under cap and not duplicate
+5. Multi-zone → **Where in {State}?** inside the single answer card; each variant shows time + Pin
+6. Clear search → answer card hides; Saved list remains
 
-### 8.3 Multi-Zone Disambiguation
+### 8.3 Multi-zone disambiguation
 
 - Search catalog has 50 entries (one per state); 12 states expose 2 timezone variants each
 - Pinnable ids are variant ids (e.g. `us-tx-central`, `us-tx-mountain`)
@@ -401,14 +419,18 @@ Use this block when generating or reviewing code:
 
 | Topic | Decision |
 |-------|----------|
+| Primary view | Saved list on open; search is secondary lookup |
+| Search UI | Compact input in header (top-right) |
+| Search results | Single answer card under search (top match), not a dropdown list |
+| Pinning | Explicit **Pin** button only; search never auto-pins |
+| Multi-zone | **Where in {State}?** inside the answer card |
 | Slider meaning | Simulated instant, not per-zone offset |
 | Card offset badge | vs local at `displayTime` |
-| State → timezone | One canonical IANA per state + `note` |
-| Search | Filters add-list only |
-| Pins | By stable `id`, max 12, dedupe |
+| State → timezone | Multi-zone variants for 12 states; legacy ids migrate |
+| Pins | By stable variant `id`, max 12, dedupe |
 | Scrub persistence | No — always open at Now |
 | Tailwind | Local CSS in production |
-| Zone label | "Zone" / abbrev from `Intl`, not "EST" |
+| Zone label | abbrev from `Intl`, not fixed "EST" |
 | First run | Auto-pin local match or 3 US hubs |
 | Remove pin | Single click, no confirm |
 

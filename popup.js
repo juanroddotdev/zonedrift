@@ -1,8 +1,9 @@
 /**
- * ZoneDrift popup — Phase 2: time engine wired to pinned cards.
+ * ZoneDrift popup — Phase 4: search and add flow.
  */
 
 import { resolvePinnedLocations } from './data/locations.js';
+import { filterLocations } from './js/search.js';
 import {
   MAX_PINS,
   addPin,
@@ -25,6 +26,8 @@ const scrubBadge = document.getElementById('scrub-badge');
 const scrubReset = document.getElementById('scrub-reset');
 const searchInput = document.getElementById('search-input');
 const addSection = document.getElementById('add-section');
+const addList = document.getElementById('add-list');
+const addEmpty = document.getElementById('add-empty');
 const pinnedList = document.getElementById('pinned-list');
 const pinnedEmpty = document.getElementById('pinned-empty');
 const statusMessage = document.getElementById('status-message');
@@ -41,11 +44,6 @@ function updateScrubUi() {
   scrubSlider.setAttribute('aria-valuetext', label);
 }
 
-function updateSearchUi() {
-  const hasQuery = searchInput.value.trim().length > 0;
-  addSection.classList.toggle('hidden', !hasQuery);
-}
-
 function showStatus(message) {
   if (!statusMessage) {
     return;
@@ -53,6 +51,10 @@ function showStatus(message) {
 
   statusMessage.textContent = message;
   statusMessage.classList.toggle('hidden', !message);
+}
+
+function updatePinLimitStatus(pinIds = cachedPinIds) {
+  showStatus(pinIds.length >= MAX_PINS ? `Pin limit reached (${MAX_PINS}).` : '');
 }
 
 function stopTick() {
@@ -98,6 +100,74 @@ function updatePinnedTimes() {
   }
 }
 
+function renderAddList() {
+  const query = searchInput.value;
+  const hasQuery = query.trim().length > 0;
+  const results = filterLocations(query, cachedPinIds);
+  const displayTime = getDisplayTime(Number(scrubSlider.value));
+
+  addSection.classList.toggle('hidden', !hasQuery);
+  addList.innerHTML = '';
+
+  if (!hasQuery) {
+    addEmpty.classList.add('hidden');
+    return;
+  }
+
+  addEmpty.classList.toggle('hidden', results.length > 0);
+
+  for (const location of results) {
+    const item = document.createElement('li');
+    item.className = 'add-list__item';
+
+    const zoneLabel = formatZoneAbbrev(location.tz, displayTime);
+    item.innerHTML = `
+      <div class="add-list__info">
+        <span class="add-list__name">${location.name} (${location.code})</span>
+        <span class="add-list__meta">${zoneLabel}</span>
+      </div>
+      <button type="button" class="btn btn--add" aria-label="Add ${location.name}">+</button>
+    `;
+
+    const handleAdd = () => {
+      handleAddPin(location.id);
+    };
+
+    item.addEventListener('click', (event) => {
+      if (event.target.closest('.btn--add')) {
+        return;
+      }
+      handleAdd();
+    });
+
+    item.querySelector('.btn--add').addEventListener('click', (event) => {
+      event.stopPropagation();
+      handleAdd();
+    });
+
+    addList.appendChild(item);
+  }
+}
+
+async function handleAddPin(locationId) {
+  const result = await addPin(locationId);
+
+  if (!result.ok) {
+    if (result.reason === 'max') {
+      showStatus(`Pin limit reached (${MAX_PINS}).`);
+    }
+    return;
+  }
+
+  cachedPinIds = await getPins();
+  renderPinnedList(cachedPinIds);
+  renderAddList();
+  updatePinLimitStatus(cachedPinIds);
+
+  const card = pinnedList.querySelector(`[data-location-id="${locationId}"]`);
+  card?.scrollIntoView({ block: 'nearest' });
+}
+
 function renderPinnedList(pinIds) {
   cachedPinIds = pinIds;
   const locations = resolvePinnedLocations(pinIds);
@@ -106,6 +176,7 @@ function renderPinnedList(pinIds) {
   if (locations.length === 0) {
     pinnedEmpty.classList.remove('hidden');
     stopTick();
+    renderAddList();
     return;
   }
 
@@ -133,6 +204,7 @@ function renderPinnedList(pinIds) {
       renderPinnedList(pins);
       updatePinnedTimes();
       startTick();
+      updatePinLimitStatus(pins);
     });
 
     pinnedList.appendChild(card);
@@ -145,6 +217,7 @@ function renderPinnedList(pinIds) {
 function handleScrubChange() {
   updateScrubUi();
   updatePinnedTimes();
+  renderAddList();
 
   if (Number(scrubSlider.value) === 0) {
     startTick();
@@ -160,7 +233,7 @@ async function initApp() {
   await applyFirstRunDefaults();
   const pins = await getPins();
   renderPinnedList(pins);
-  showStatus(pins.length >= MAX_PINS ? `Pin limit reached (${MAX_PINS}).` : '');
+  updatePinLimitStatus(pins);
 }
 
 scrubSlider.addEventListener('input', handleScrubChange);
@@ -170,7 +243,7 @@ scrubReset.addEventListener('click', () => {
   handleScrubChange();
 });
 
-searchInput.addEventListener('input', updateSearchUi);
+searchInput.addEventListener('input', renderAddList);
 
 window.addEventListener('pagehide', stopTick);
 
@@ -188,8 +261,5 @@ document.addEventListener('visibilitychange', () => {
 
 document.addEventListener('DOMContentLoaded', () => {
   updateScrubUi();
-  updateSearchUi();
   initApp();
 });
-
-export { addPin, getPins, renderPinnedList, showStatus };

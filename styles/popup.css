@@ -235,6 +235,12 @@ body {
   border-radius: var(--radius-md);
 }
 
+.empty-state--compact {
+  padding: 12px;
+  margin-top: 4px;
+  font-size: 11px;
+}
+
 /* Location card (shell placeholder for Phase 3) */
 
 .card {
@@ -322,6 +328,21 @@ body {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   font-size: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.add-list__item:hover {
+  border-color: rgba(108, 158, 255, 0.45);
+  background: rgba(108, 158, 255, 0.06);
+}
+
+.add-list__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
 }
 
 .add-list__name {
@@ -336,10 +357,12 @@ body {
 }
 
 .btn--add {
+  flex-shrink: 0;
   padding: 4px 10px;
   background: rgba(108, 158, 255, 0.15);
   border: 1px solid rgba(108, 158, 255, 0.35);
   color: var(--color-accent);
+  cursor: pointer;
 }
 
 .btn--add:hover {

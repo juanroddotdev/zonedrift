@@ -32,6 +32,8 @@ import {
 const scrubSlider = document.getElementById('scrub-slider');
 const scrubBadge = document.getElementById('scrub-badge');
 const scrubReset = document.getElementById('scrub-reset');
+const plannerToggle = document.getElementById('planner-toggle');
+const plannerPanel = document.getElementById('planner-panel');
 const searchInput = document.getElementById('search-input');
 const answerSection = document.getElementById('answer-section');
 const answerCard = document.getElementById('answer-card');
@@ -51,6 +53,37 @@ function updateScrubUi() {
 
   scrubBadge.textContent = label;
   scrubSlider.setAttribute('aria-valuetext', label);
+  plannerToggle.classList.toggle('planner-toggle--active', hours !== 0);
+}
+
+function isPlannerOpen() {
+  return plannerToggle.getAttribute('aria-expanded') === 'true';
+}
+
+function openPlanner() {
+  plannerPanel.classList.remove('hidden');
+  plannerToggle.setAttribute('aria-expanded', 'true');
+}
+
+function closePlanner() {
+  plannerPanel.classList.add('hidden');
+  plannerToggle.setAttribute('aria-expanded', 'false');
+
+  if (Number(scrubSlider.value) !== 0) {
+    scrubSlider.value = '0';
+    updateScrubUi();
+    updateAllTimes();
+    startTick();
+  }
+}
+
+function togglePlanner() {
+  if (isPlannerOpen()) {
+    closePlanner();
+    return;
+  }
+
+  openPlanner();
 }
 
 function showStatus(message) {
@@ -442,6 +475,8 @@ scrubReset.addEventListener('click', () => {
   scrubSlider.value = '0';
   handleScrubChange();
 });
+
+plannerToggle.addEventListener('click', togglePlanner);
 
 searchInput.addEventListener('input', handleSearchInput);
 

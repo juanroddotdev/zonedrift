@@ -72,7 +72,7 @@ function scoreCityMatch(query, cityName) {
  * Resolve a search query to a location via city name (offline index).
  * Returns null if no confident city match.
  */
-export function resolveCityMatch(query) {
+export function resolveCitySearchMatch(query) {
   const normalized = normalize(query);
   if (!normalized) {
     return null;
@@ -96,7 +96,18 @@ export function resolveCityMatch(query) {
     return null;
   }
 
-  return getLocationById(topMatches[0].entry.locationId);
+  const match = topMatches[0].entry;
+  const location = getLocationById(match.locationId);
+
+  if (!location) {
+    return null;
+  }
+
+  return { location, cityName: match.name };
+}
+
+export function resolveCityMatch(query) {
+  return resolveCitySearchMatch(query)?.location ?? null;
 }
 
 /**

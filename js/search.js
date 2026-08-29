@@ -1,4 +1,4 @@
-import { resolveCityMatch } from '../data/cities.js';
+import { resolveCitySearchMatch } from '../data/cities.js';
 import {
   MULTI_ZONE_GROUPS,
   SEARCH_CATALOG,
@@ -85,9 +85,14 @@ export function filterSearchResults(query, pinnedIds = []) {
     return [];
   }
 
-  const cityMatch = resolveCityMatch(query);
-  if (cityMatch) {
-    return [{ type: 'single', location: cityMatch, source: 'city' }];
+  const citySearch = resolveCitySearchMatch(query);
+  if (citySearch) {
+    return [{
+      type: 'single',
+      location: citySearch.location,
+      source: 'city',
+      cityLabel: citySearch.cityName,
+    }];
   }
 
   return filterCatalogResults(query);

@@ -27,6 +27,7 @@ const nashvilleSearch = filterSearchResults('nashville');
 assert(nashvilleSearch[0]?.type === 'single', 'search nashville returns single answer');
 assert(nashvilleSearch[0]?.source === 'city', 'nashville match is city-sourced');
 assert(nashvilleSearch[0]?.location.id === 'us-tn-central', 'nashville search uses central variant');
+assert(nashvilleSearch[0]?.cityLabel === 'Nashville', 'nashville search includes city label');
 
 const tennessee = filterSearchResults('tennessee');
 assert(tennessee[0]?.type === 'group', 'search tennessee returns group picker');

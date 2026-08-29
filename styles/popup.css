@@ -379,7 +379,6 @@ body {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
   padding-right: 2px;
 }
 
@@ -409,49 +408,69 @@ body {
   font-size: 11px;
 }
 
-/* Location card (shell placeholder for Phase 3) */
+/* Location rows (saved list + future search suggestions) */
 
-.card {
-  display: flex;
-  gap: 8px;
-  padding: 10px 12px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+.loc-list {
+  gap: 0;
 }
 
-.card__body {
+.loc-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px 8px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.loc-row:last-child {
+  border-bottom: none;
+}
+
+.loc-row__main {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.card__title {
-  margin: 0 0 6px;
-  font-size: 12px;
+.loc-row__label-block {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.loc-row__label {
+  font-size: 13px;
   font-weight: 600;
-  line-height: 1.35;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.card__abbrev {
+.loc-row__meta {
+  font-size: 10px;
   color: var(--color-muted);
-  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.card__time {
-  margin: 0 0 4px;
-  font-size: 18px;
+.loc-row__time {
+  flex-shrink: 0;
+  font-size: 14px;
   font-weight: 600;
-  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
-.card__offset {
-  margin: 0;
-  color: var(--color-accent);
-  font-size: 11px;
-}
-
-.card__remove {
+.loc-row__remove {
   flex-shrink: 0;
   width: 24px;
   height: 24px;
@@ -463,9 +482,16 @@ body {
   font-size: 16px;
   line-height: 1;
   cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
 }
 
-.card__remove:hover {
+.loc-row:hover .loc-row__remove,
+.loc-row:focus-within .loc-row__remove {
+  opacity: 1;
+}
+
+.loc-row__remove:hover {
   background: rgba(242, 139, 130, 0.12);
   color: var(--color-danger);
 }

@@ -14,12 +14,12 @@ export function getDisplayTime(scrubHours, now = Date.now()) {
   return new Date(now + getScrubOffsetMs(scrubHours));
 }
 
-export function formatClock(tz, displayTime, use24Hour = false) {
+export function formatClock(tz, displayTime, use24Hour = false, includeSeconds = true) {
   return new Intl.DateTimeFormat('en-US', {
     timeZone: tz,
     hour: 'numeric',
     minute: '2-digit',
-    second: '2-digit',
+    ...(includeSeconds ? { second: '2-digit' } : {}),
     hour12: !use24Hour,
   }).format(displayTime);
 }

@@ -1,5 +1,5 @@
 /**
- * ZoneDrift popup — saved-first layout with lookup answer card.
+ * ZoneDrift popup — saved-first layout with location rows (Phase 8A).
  */
 
 import { filterCitiesInGroup } from './data/cities.js';
@@ -10,6 +10,7 @@ import {
   resolvePinnedLocations,
 } from './data/locations.js';
 import { filterSearchResults } from './js/search.js';
+import { formatLocationRowMeta, getLocationRowLabel } from './js/display.js';
 import {
   MAX_PINS,
   addPin,
@@ -90,20 +91,27 @@ function startTick() {
 
 function updateLocationTimeElements(root, location, displayTime) {
   const abbrev = formatZoneAbbrev(location.tz, displayTime);
+  const offsetLabel = formatOffsetLabel(offsetVsLocal(location.tz, displayTime));
   const abbrevEl = root.querySelector('[data-role="abbrev"]');
   const timeEl = root.querySelector('[data-role="time"]');
   const offsetEl = root.querySelector('[data-role="offset"]');
+  const metaEl = root.querySelector('[data-role="meta"]');
 
   if (abbrevEl) {
     abbrevEl.textContent = abbrev;
   }
 
   if (timeEl) {
-    timeEl.textContent = formatClock(location.tz, displayTime, use24Hour);
+    const compact = timeEl.classList.contains('loc-row__time');
+    timeEl.textContent = formatClock(location.tz, displayTime, use24Hour, !compact);
   }
 
   if (offsetEl) {
-    offsetEl.textContent = formatOffsetLabel(offsetVsLocal(location.tz, displayTime));
+    offsetEl.textContent = offsetLabel;
+  }
+
+  if (metaEl) {
+    metaEl.textContent = formatLocationRowMeta(abbrev, offsetLabel);
   }
 }
 
@@ -112,9 +120,9 @@ function updateAllTimes() {
   const locations = resolvePinnedLocations(cachedPinIds);
 
   for (const location of locations) {
-    const card = pinnedList.querySelector(`[data-location-id="${location.id}"]`);
-    if (card) {
-      updateLocationTimeElements(card, location, displayTime);
+    const row = pinnedList.querySelector(`[data-location-id="${location.id}"]`);
+    if (row) {
+      updateLocationTimeElements(row, location, displayTime);
     }
   }
 
@@ -335,14 +343,53 @@ async function handleAddPin(locationId) {
   renderAnswerCard();
   updatePinLimitStatus(cachedPinIds);
 
-  const card = pinnedList.querySelector(`[data-location-id="${migratePinId(locationId)}"]`);
-  card?.scrollIntoView({ block: 'nearest' });
+  const row = pinnedList.querySelector(`[data-location-id="${migratePinId(locationId)}"]`);
+  row?.scrollIntoView({ block: 'nearest' });
+}
+
+function createLocationRow(location, options = {}) {
+  const { mode = 'saved', cityLabel } = options;
+  const label = getLocationRowLabel(location, cityLabel);
+  const row = document.createElement('article');
+  row.className = `loc-row loc-row--${mode}`;
+  row.dataset.locationId = location.id;
+
+  row.innerHTML = `
+    <div class="loc-row__main">
+      <div class="loc-row__label-block">
+        <span class="loc-row__label">${label}</span>
+        <span class="loc-row__meta" data-role="meta">—</span>
+      </div>
+      <time class="loc-row__time" data-role="time">—:—</time>
+    </div>
+  `;
+
+  if (mode === 'saved') {
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.className = 'loc-row__remove';
+    removeButton.setAttribute('aria-label', `Remove ${label}`);
+    removeButton.textContent = '×';
+    removeButton.addEventListener('click', async () => {
+      await removePin(location.id);
+      const pins = await getPins();
+      renderPinnedList(pins);
+      renderAnswerCard();
+      updateAllTimes();
+      startTick();
+      updatePinLimitStatus(pins);
+    });
+    row.appendChild(removeButton);
+  }
+
+  updateLocationTimeElements(row, location, getDisplayTime(Number(scrubSlider.value)));
+  return row;
 }
 
 function renderPinnedList(pinIds) {
   cachedPinIds = pinIds;
   const locations = resolvePinnedLocations(pinIds);
-  pinnedList.querySelectorAll('.card').forEach((node) => node.remove());
+  pinnedList.querySelectorAll('.loc-row').forEach((node) => node.remove());
 
   if (locations.length === 0) {
     pinnedEmpty.classList.remove('hidden');
@@ -354,33 +401,7 @@ function renderPinnedList(pinIds) {
   pinnedEmpty.classList.add('hidden');
 
   for (const location of locations) {
-    const card = document.createElement('article');
-    card.className = 'card';
-    card.dataset.locationId = location.id;
-    const label = getLocationLabel(location);
-
-    card.innerHTML = `
-      <div class="card__body">
-        <h3 class="card__title">
-          ${label} · <span data-role="abbrev">—</span>
-        </h3>
-        <p class="card__time" data-role="time">—:—:— —</p>
-        <p class="card__offset" data-role="offset">—</p>
-      </div>
-      <button type="button" class="card__remove" aria-label="Remove ${location.name}">×</button>
-    `;
-
-    card.querySelector('.card__remove').addEventListener('click', async () => {
-      await removePin(location.id);
-      const pins = await getPins();
-      renderPinnedList(pins);
-      renderAnswerCard();
-      updateAllTimes();
-      startTick();
-      updatePinLimitStatus(pins);
-    });
-
-    pinnedList.appendChild(card);
+    pinnedList.appendChild(createLocationRow(location, { mode: 'saved' }));
   }
 
   updateAllTimes();

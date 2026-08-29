@@ -1,14 +1,8 @@
 /**
- * ZoneDrift popup — saved-first layout with location rows (Phase 8A).
+ * ZoneDrift popup — unified location rows with search dropdown (Phase 8B).
  */
 
-import { filterCitiesInGroup } from './data/cities.js';
-import {
-  getLocationById,
-  getLocationLabel,
-  migratePinId,
-  resolvePinnedLocations,
-} from './data/locations.js';
+import { getLocationById, migratePinId, resolvePinnedLocations } from './data/locations.js';
 import { filterSearchResults } from './js/search.js';
 import { formatLocationRowMeta, getLocationRowLabel } from './js/display.js';
 import {
@@ -25,9 +19,10 @@ import {
   formatScrubBadge,
   formatZoneAbbrev,
   getDisplayTime,
-  offsetBetweenZones,
   offsetVsLocal,
 } from './js/time-engine.js';
+
+const MAX_SUGGESTIONS = 5;
 
 const scrubSlider = document.getElementById('scrub-slider');
 const scrubBadge = document.getElementById('scrub-badge');
@@ -35,8 +30,7 @@ const scrubReset = document.getElementById('scrub-reset');
 const plannerToggle = document.getElementById('planner-toggle');
 const plannerPanel = document.getElementById('planner-panel');
 const searchInput = document.getElementById('search-input');
-const answerSection = document.getElementById('answer-section');
-const answerCard = document.getElementById('answer-card');
+const searchSuggestions = document.getElementById('search-suggestions');
 const pinnedList = document.getElementById('pinned-list');
 const pinnedEmpty = document.getElementById('pinned-empty');
 const statusMessage = document.getElementById('status-message');
@@ -44,8 +38,6 @@ const statusMessage = document.getElementById('status-message');
 let cachedPinIds = [];
 let use24Hour = false;
 let tickInterval = null;
-let browseCitiesOpen = false;
-let activeBrowseGroupId = null;
 
 function updateScrubUi() {
   const hours = Number(scrubSlider.value);
@@ -150,215 +142,67 @@ function updateLocationTimeElements(root, location, displayTime) {
 
 function updateAllTimes() {
   const displayTime = getDisplayTime(Number(scrubSlider.value));
-  const locations = resolvePinnedLocations(cachedPinIds);
 
-  for (const location of locations) {
-    const row = pinnedList.querySelector(`[data-location-id="${location.id}"]`);
-    if (row) {
+  for (const row of document.querySelectorAll('.loc-row[data-location-id]')) {
+    const location = getLocationById(row.dataset.locationId);
+    if (location) {
       updateLocationTimeElements(row, location, displayTime);
     }
   }
+}
 
-  if (!answerSection.classList.contains('hidden')) {
-    for (const target of answerCard.querySelectorAll('[data-location-id]')) {
-      const location = getLocationById(target.dataset.locationId);
-      if (location) {
-        updateLocationTimeElements(target, location, displayTime);
+function expandSearchResults(results) {
+  const items = [];
+
+  for (const result of results) {
+    if (result.type === 'single') {
+      items.push({
+        location: result.location,
+        cityLabel: result.cityLabel,
+      });
+    } else {
+      for (const location of result.variants) {
+        items.push({ location });
       }
     }
-  }
-}
 
-function createPinButton(location, label) {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'btn btn--pin';
-  button.textContent = isPinned(location.id) ? 'Saved' : 'Pin';
-  button.disabled = isPinned(location.id);
-
-  if (!button.disabled) {
-    button.addEventListener('click', (event) => {
-      event.stopPropagation();
-      handleAddPin(location.id);
-    });
-  }
-
-  button.setAttribute('aria-label', `${label} ${location.name}`);
-  return button;
-}
-
-function getVariantDiffMessage(variants, displayTime) {
-  if (variants.length < 2) {
-    return '';
-  }
-
-  const diffHours = Math.abs(offsetBetweenZones(variants[0].tz, variants[1].tz, displayTime));
-
-  if (diffHours === 0) {
-    return 'Same time right now — either works.';
-  }
-
-  if (diffHours === 0.5) {
-    return '30 minute difference — pick the city your contact is in.';
-  }
-
-  const hours = Number.isInteger(diffHours) ? diffHours : diffHours.toFixed(1);
-  const unit = diffHours === 1 ? 'hour' : 'hours';
-  return `${hours} ${unit} difference — pick the city your contact is in.`;
-}
-
-function renderCityBrowseList(container, groupId, filterText = '') {
-  const cities = filterCitiesInGroup(groupId, filterText);
-  container.innerHTML = '';
-
-  for (const city of cities) {
-    const location = getLocationById(city.locationId);
-    if (!location) {
-      continue;
+    if (items.length >= MAX_SUGGESTIONS) {
+      break;
     }
-
-    const row = document.createElement('li');
-    row.className = 'answer-card__city-item';
-    row.dataset.locationId = location.id;
-    row.innerHTML = `
-      <div class="answer-card__city-item-body">
-        <span class="answer-card__city-name">${city.name}</span>
-        <span class="answer-card__city-time">
-          <span data-role="time">—:—:— —</span>
-          <span data-role="abbrev">—</span>
-        </span>
-      </div>
-    `;
-    row.appendChild(createPinButton(location, 'Pin'));
-    container.appendChild(row);
-    updateLocationTimeElements(row, location, getDisplayTime(Number(scrubSlider.value)));
-  }
-}
-
-function renderSingleAnswer(location, options = {}) {
-  const label = getLocationLabel(location);
-  const shell = document.createElement('article');
-  shell.className = 'answer-card answer-card--single';
-  shell.dataset.locationId = location.id;
-
-  const cityHint = options.source === 'city'
-    ? `<p class="answer-card__hint">Matched city in ${location.name}</p>`
-    : '';
-
-  shell.innerHTML = `
-    <div class="answer-card__body">
-      ${cityHint}
-      <h3 class="answer-card__title">${label} · <span data-role="abbrev">—</span></h3>
-      ${location.regionHint ? `<p class="answer-card__region-hint">${location.regionHint}</p>` : ''}
-      <p class="answer-card__time" data-role="time">—:—:— —</p>
-      <p class="answer-card__offset" data-role="offset">—</p>
-    </div>
-  `;
-
-  shell.appendChild(createPinButton(location, isPinned(location.id) ? 'Saved' : 'Pin'));
-  answerCard.replaceChildren(shell);
-  updateLocationTimeElements(shell, location, getDisplayTime(Number(scrubSlider.value)));
-}
-
-function renderGroupAnswer(groupResult) {
-  const displayTime = getDisplayTime(Number(scrubSlider.value));
-  const shell = document.createElement('article');
-  shell.className = 'answer-card answer-card--group';
-  shell.innerHTML = `
-    <p class="answer-card__heading">Where in ${groupResult.name}?</p>
-    <p class="answer-card__helper">${getVariantDiffMessage(groupResult.variants, displayTime)}</p>
-    <div class="answer-card__variants"></div>
-    <div class="answer-card__browse">
-      <button type="button" class="btn btn--ghost btn--compact answer-card__browse-toggle">
-        ${browseCitiesOpen && activeBrowseGroupId === groupResult.groupId ? 'Hide cities' : 'Browse cities'}
-      </button>
-      <div class="answer-card__city-browse ${browseCitiesOpen && activeBrowseGroupId === groupResult.groupId ? '' : 'hidden'}">
-        <input
-          type="search"
-          class="answer-card__city-filter"
-          placeholder="Filter cities in ${groupResult.name}…"
-          autocomplete="off"
-          spellcheck="false"
-        />
-        <ul class="answer-card__city-list"></ul>
-      </div>
-    </div>
-  `;
-
-  const variantsRoot = shell.querySelector('.answer-card__variants');
-
-  for (const location of groupResult.variants) {
-    const row = document.createElement('div');
-    row.className = 'answer-card__variant';
-    row.dataset.locationId = location.id;
-    row.innerHTML = `
-      <div class="answer-card__variant-body">
-        <span class="answer-card__variant-label">${location.sublabel}</span>
-        <span class="answer-card__variant-hint">${location.regionHint ?? ''}</span>
-        <span class="answer-card__variant-time">
-          <span data-role="time">—:—:— —</span>
-          <span data-role="abbrev">—</span>
-        </span>
-        <span class="answer-card__offset" data-role="offset">—</span>
-      </div>
-    `;
-    row.appendChild(createPinButton(location, 'Pin'));
-    variantsRoot.appendChild(row);
-    updateLocationTimeElements(row, location, displayTime);
   }
 
-  const browseToggle = shell.querySelector('.answer-card__browse-toggle');
-  const cityBrowse = shell.querySelector('.answer-card__city-browse');
-  const cityFilter = shell.querySelector('.answer-card__city-filter');
-  const cityList = shell.querySelector('.answer-card__city-list');
-
-  browseToggle.addEventListener('click', () => {
-    if (browseCitiesOpen && activeBrowseGroupId === groupResult.groupId) {
-      browseCitiesOpen = false;
-      activeBrowseGroupId = null;
-    } else {
-      browseCitiesOpen = true;
-      activeBrowseGroupId = groupResult.groupId;
-    }
-    renderAnswerCard();
-  });
-
-  if (browseCitiesOpen && activeBrowseGroupId === groupResult.groupId) {
-    renderCityBrowseList(cityList, groupResult.groupId, cityFilter.value);
-    cityFilter.addEventListener('input', () => {
-      renderCityBrowseList(cityList, groupResult.groupId, cityFilter.value);
-    });
-    cityBrowse.classList.remove('hidden');
-  }
-
-  answerCard.replaceChildren(shell);
+  return items.slice(0, MAX_SUGGESTIONS);
 }
 
-function renderAnswerCard() {
+function renderSearchSuggestions() {
   const query = searchInput.value.trim();
+  searchSuggestions.replaceChildren('');
 
   if (!query) {
-    answerSection.classList.add('hidden');
-    answerCard.innerHTML = '';
+    searchSuggestions.classList.add('hidden');
+    searchInput.setAttribute('aria-expanded', 'false');
     return;
   }
 
-  answerSection.classList.remove('hidden');
   const results = filterSearchResults(query);
+  searchSuggestions.classList.remove('hidden');
+  searchInput.setAttribute('aria-expanded', 'true');
 
   if (results.length === 0) {
-    answerCard.innerHTML = '<p class="answer-card__empty">No locations match your search.</p>';
+    const empty = document.createElement('p');
+    empty.className = 'search-suggestions__empty';
+    empty.textContent = 'No matches';
+    searchSuggestions.appendChild(empty);
     return;
   }
 
-  const topResult = results[0];
-
-  if (topResult.type === 'single') {
-    renderSingleAnswer(topResult.location, { source: topResult.source });
-    return;
+  for (const item of expandSearchResults(results)) {
+    searchSuggestions.appendChild(
+      createLocationRow(item.location, { mode: 'suggestion', cityLabel: item.cityLabel }),
+    );
   }
 
-  renderGroupAnswer(topResult);
+  updateAllTimes();
 }
 
 async function handleAddPin(locationId) {
@@ -372,8 +216,9 @@ async function handleAddPin(locationId) {
   }
 
   cachedPinIds = await getPins();
+  searchInput.value = '';
   renderPinnedList(cachedPinIds);
-  renderAnswerCard();
+  renderSearchSuggestions();
   updatePinLimitStatus(cachedPinIds);
 
   const row = pinnedList.querySelector(`[data-location-id="${migratePinId(locationId)}"]`);
@@ -386,6 +231,7 @@ function createLocationRow(location, options = {}) {
   const row = document.createElement('article');
   row.className = `loc-row loc-row--${mode}`;
   row.dataset.locationId = location.id;
+  row.setAttribute('role', mode === 'suggestion' ? 'option' : undefined);
 
   row.innerHTML = `
     <div class="loc-row__main">
@@ -407,12 +253,27 @@ function createLocationRow(location, options = {}) {
       await removePin(location.id);
       const pins = await getPins();
       renderPinnedList(pins);
-      renderAnswerCard();
+      renderSearchSuggestions();
       updateAllTimes();
       startTick();
       updatePinLimitStatus(pins);
     });
     row.appendChild(removeButton);
+  }
+
+  if (mode === 'suggestion') {
+    const pinned = isPinned(location.id);
+    const pinButton = document.createElement('button');
+    pinButton.type = 'button';
+    pinButton.className = 'loc-row__pin';
+    pinButton.textContent = pinned ? '✓' : '+';
+    pinButton.disabled = pinned;
+    pinButton.setAttribute('aria-label', pinned ? `${label} saved` : `Add ${label}`);
+    pinButton.addEventListener('click', async (event) => {
+      event.stopPropagation();
+      await handleAddPin(location.id);
+    });
+    row.appendChild(pinButton);
   }
 
   updateLocationTimeElements(row, location, getDisplayTime(Number(scrubSlider.value)));
@@ -427,7 +288,7 @@ function renderPinnedList(pinIds) {
   if (locations.length === 0) {
     pinnedEmpty.classList.remove('hidden');
     stopTick();
-    renderAnswerCard();
+    renderSearchSuggestions();
     return;
   }
 
@@ -453,9 +314,7 @@ function handleScrubChange() {
 }
 
 function handleSearchInput() {
-  browseCitiesOpen = false;
-  activeBrowseGroupId = null;
-  renderAnswerCard();
+  renderSearchSuggestions();
   updatePinLimitStatus();
 }
 
@@ -467,6 +326,7 @@ async function initApp() {
   const pins = await getPins();
   renderPinnedList(pins);
   updatePinLimitStatus(pins);
+  searchInput.focus();
 }
 
 scrubSlider.addEventListener('input', handleScrubChange);
@@ -479,6 +339,14 @@ scrubReset.addEventListener('click', () => {
 plannerToggle.addEventListener('click', togglePlanner);
 
 searchInput.addEventListener('input', handleSearchInput);
+
+searchInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    searchInput.value = '';
+    renderSearchSuggestions();
+    searchInput.blur();
+  }
+});
 
 window.addEventListener('pagehide', stopTick);
 

@@ -1,3 +1,4 @@
+import { resolveCityMatch } from '../data/cities.js';
 import {
   MULTI_ZONE_GROUPS,
   SEARCH_CATALOG,
@@ -17,7 +18,10 @@ function buildHaystack(entry) {
       .toLowerCase();
   }
 
-  return [entry.name, entry.code, entry.region].join(' ').toLowerCase();
+  const group = MULTI_ZONE_GROUPS[entry.groupId];
+  const cityHaystack = group?.variants.flatMap((variant) => variant.cities).join(' ') ?? '';
+
+  return [entry.name, entry.code, entry.region, cityHaystack].join(' ').toLowerCase();
 }
 
 function getGroupVariantsForLookup(groupId) {
@@ -31,22 +35,8 @@ function getGroupVariantsForLookup(groupId) {
     .filter(Boolean);
 }
 
-/**
- * Filter the search catalog by query.
- * Lookup mode includes already-saved locations so search always returns an answer.
- *
- * @returns {Array<
- *   | { type: 'single', location: import('../data/locations.js').LOCATIONS[number] }
- *   | { type: 'group', groupId: string, name: string, code: string, region: string, variants: import('../data/locations.js').LOCATIONS[number][] }
- * >}
- */
-export function filterSearchResults(query, pinnedIds = []) {
+function filterCatalogResults(query) {
   const normalized = query.trim().toLowerCase();
-  if (!normalized) {
-    return [];
-  }
-
-  const pinnedSet = new Set(pinnedIds.map(migratePinId));
   const results = [];
 
   for (const entry of SEARCH_CATALOG) {
@@ -78,6 +68,29 @@ export function filterSearchResults(query, pinnedIds = []) {
   }
 
   return results;
+}
+
+/**
+ * Filter the search catalog by query.
+ * City matches resolve directly to a single location answer.
+ *
+ * @returns {Array<
+ *   | { type: 'single', location: import('../data/locations.js').LOCATIONS[number], source?: string }
+ *   | { type: 'group', groupId: string, name: string, code: string, region: string, variants: import('../data/locations.js').LOCATIONS[number][] }
+ * >}
+ */
+export function filterSearchResults(query, pinnedIds = []) {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) {
+    return [];
+  }
+
+  const cityMatch = resolveCityMatch(query);
+  if (cityMatch) {
+    return [{ type: 'single', location: cityMatch, source: 'city' }];
+  }
+
+  return filterCatalogResults(query);
 }
 
 /**

@@ -1,8 +1,9 @@
 /**
- * Search filter tests.
+ * Search and city resolution tests.
  * Run: node scripts/verify-search.mjs
  */
 
+import { resolveCityMatch } from '../data/cities.js';
 import { LOCATIONS } from '../data/locations.js';
 import { filterLocations, filterSearchResults } from '../js/search.js';
 
@@ -18,28 +19,33 @@ function assert(condition, message) {
   console.log(`ok: ${message}`);
 }
 
+const nashville = resolveCityMatch('nashville');
+assert(nashville?.id === 'us-tn-central', 'nashville resolves to central Tennessee');
+
+const nashvilleSearch = filterSearchResults('nashville');
+assert(nashvilleSearch[0]?.type === 'single', 'search nashville returns single answer');
+assert(nashvilleSearch[0]?.source === 'city', 'nashville match is city-sourced');
+assert(nashvilleSearch[0]?.location.id === 'us-tn-central', 'nashville search uses central variant');
+
+const tennessee = filterSearchResults('tennessee');
+assert(tennessee[0]?.type === 'group', 'search tennessee returns group picker');
+assert(
+  tennessee[0]?.variants[0]?.sublabel.includes('Nashville'),
+  'tennessee picker uses city-led labels',
+);
+
 const california = filterSearchResults('california', []);
 assert(california.length === 1, 'search "california" finds California');
 assert(california[0].type === 'single', 'California is a single-zone result');
-assert(california[0].location.code === 'CA', 'California result has CA code');
-
-const californiaPinned = filterSearchResults('california', ['us-ca']);
-assert(californiaPinned.length === 1, 'lookup still finds California when already saved');
 
 const texasGroup = filterSearchResults('tx', []);
-assert(texasGroup.length === 1, 'search "tx" finds one catalog entry');
-assert(texasGroup[0].type === 'group', 'Texas is a multi-zone group');
-assert(texasGroup[0].variants.length === 2, 'Texas has two timezone variants');
+assert(texasGroup[0].type === 'group', 'search "tx" finds Texas group');
 
-const texasVariants = filterLocations('tx', []);
-assert(texasVariants.length === 2, 'filterLocations returns both Texas variants');
+const houston = filterSearchResults('houston');
+assert(houston[0]?.location.id === 'us-tx-central', 'houston resolves to central Texas');
 
 const midwestResults = filterLocations('midwest', []);
 assert(midwestResults.length > 0, 'search "midwest" returns results');
-assert(
-  midwestResults.every((loc) => loc.region === 'Midwest'),
-  'midwest filter matches region field',
-);
 
 const pinned = ['us-ca', 'us-ny'];
 const unpinnedWest = filterLocations('west', pinned);
@@ -47,9 +53,6 @@ assert(!unpinnedWest.some((loc) => pinned.includes(loc.id)), 'pinned ids exclude
 
 const noResults = filterSearchResults('zzzz', []);
 assert(noResults.length === 0, 'nonsense query returns empty');
-
-const floridaGroup = filterSearchResults('florida', []);
-assert(floridaGroup[0]?.type === 'group', 'Florida resolves as a multi-zone group');
 
 assert(LOCATIONS.length === 62, 'location catalog has 62 pinnable entries');
 

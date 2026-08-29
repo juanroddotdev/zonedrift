@@ -70,6 +70,12 @@ export function offsetVsLocal(tz, displayTime, localTz = userTz) {
   return (tzOffset - localOffset) / 60;
 }
 
+export function offsetBetweenZones(tzA, tzB, displayTime) {
+  const offsetA = getTimezoneOffsetMinutes(tzA, displayTime);
+  const offsetB = getTimezoneOffsetMinutes(tzB, displayTime);
+  return (offsetA - offsetB) / 60;
+}
+
 export function formatOffsetLabel(deltaHours) {
   if (deltaHours === 0) {
     return 'Same time';

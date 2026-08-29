@@ -290,13 +290,15 @@ Match (case-insensitive) on:
 5. Multi-zone → **Where in {State}?** inside the single answer card; each variant shows time + Pin
 6. Clear search → answer card hides; Saved list remains
 
-### 8.3 Multi-zone disambiguation
+### 8.4 Multi-zone disambiguation
 
 - Search catalog has 50 entries (one per state); 12 states expose 2 timezone variants each
 - Pinnable ids are variant ids (e.g. `us-tx-central`, `us-tx-mountain`)
 - Legacy pin ids migrate automatically via `PIN_ID_MIGRATIONS` in storage
+- **Variant labels use anchor cities**, not county/region jargon (see §15)
+- **City search** resolves directly to a variant when query matches a known city (see §15)
 
-### 8.4 Keyboard (v1.1)
+### 8.5 Keyboard (v1.1)
 
 - `/` → focus search
 - `Esc` → clear search, blur
@@ -358,21 +360,55 @@ Match (case-insensitive) on:
 - [x] Pin on select; hide/disable pinned in results
 - [x] Empty states (no pins, no results)
 
-### Phase 5 — Polish (½ day, optional for v1)
+### Phase 5 — City Disambiguation (1 day)
+
+> **Goal:** Users know cities, not county splits. Searching `Nashville` should skip the picker; searching `Tennessee` should show city-labeled options, not “eastern counties.”
+
+#### Phase 5A — City-labeled variants (½ day)
+
+- [x] Extend variant data with `cities[]` (3–5 anchor cities per zone) and `regionHint` (short plain-language subtitle)
+- [x] Replace abstract `sublabel` copy in answer card (e.g. “Nashville, Memphis” not “Most of Tennessee”)
+- [x] Show zone abbrev + live time per variant row (already present; keep)
+- [x] When variants share the same clock at `displayTime`, show helper: *“Same time right now”*
+- [x] When variants differ, show helper: *“1 hr difference — pick the city your contact is in”*
+
+#### Phase 5B — City search resolution (½ day)
+
+- [x] Add `data/cities.js` (or extend `locations.js`) with offline city → variant `id` index
+- [x] Search matches: state name, code, region, **city name**, and city aliases
+- [x] City match resolves directly to single answer card (skip “Where in {State}?” picker)
+- [x] State-only match (e.g. `tennessee`) still shows the multi-variant picker with city labels
+- [ ] Ambiguous city names (e.g. `Portland` OR vs ME) — defer to v2 or pick by population; document in data
+
+#### Phase 5C — Browse cities UI (optional, ½ day)
+
+- [x] “Browse cities” link/button inside multi-variant answer card
+- [x] Expands inline filterable city list for that state only (no second search bar)
+- [x] Tapping a city previews that variant’s time; **Pin** adds variant `id`
+- [x] Collapse back to two-zone summary view
+
+#### Phase 5D — Map preview (optional polish, post-v5)
+
+- [ ] Collapsed **“Show map”** toggle inside answer card (hidden by default)
+- [ ] Static SVG per split state: colored regions + labeled city dots (no tiles/API)
+- [ ] Map is supplementary; city names remain primary
+- [ ] Skip if SVG asset weight or design time is too high for v1
+
+### Phase 6 — Polish (½ day, optional)
 
 - [ ] **Copy all times** button → clipboard (name, zone abbrev, formatted time at `displayTime`)
 - [ ] **12/24h toggle** in footer, persisted
-- [ ] Keyboard shortcuts
+- [ ] Keyboard shortcuts (`/` focus, `Esc` clear)
 - [ ] Subtle transition on scrub (no heavy animation)
 
-### Phase 6 — QA & Ship Prep (½ day)
+### Phase 7 — QA & Ship Prep (½ day)
 
 - [ ] Manual test matrix (§11)
 - [ ] Icons 16/48/128 for `manifest.json`
-- [ ] README: install, privacy (no network), data note for multi-zone states
+- [ ] README: install, privacy (no network), multi-zone + city data notes
 - [ ] Zip for Web Store or keep unpacked
 
-**Total estimate:** ~3–4 days for one developer including polish; ~2 days for MVP (Phases 0–4 only).
+**Total estimate:** ~4–5 days including city disambiguation; Phase 5D map is optional.
 
 ---
 
@@ -386,8 +422,11 @@ Match (case-insensitive) on:
 | Pin duplicate | Ignored or button disabled |
 | 13th pin | Friendly cap message |
 | Unpin last | Empty state shown |
-| Search "TX" | Texas in add list |
-| Search pinned only | Add list empty or filtered; pinned still visible |
+| Search "TX" | Texas answer card with city-labeled zones |
+| Search "Nashville" | Direct preview for `us-tn-central` (no picker) |
+| Search "Tennessee" | Picker shows Nashville/Memphis vs Knoxville/Chattanooga labels |
+| Search pinned location | Answer card still shows; Pin says Saved |
+| Same-time variants | Helper text: "Same time right now" |
 | DST spring forward | `Intl` abbrev/time correct; no manual DST code |
 | Popup close/reopen | Scrub 0; pins persisted |
 | Offline | Full function (no network used) |
@@ -403,15 +442,146 @@ Match (case-insensitive) on:
 
 ---
 
+## 15. City Disambiguation Spec (Phase 5)
+
+### 15.1 Problem
+
+Multi-zone states use geographic labels (“Eastern counties”, “Most of Tennessee”) that are meaningless to users who only know **city names** (e.g. a Texan scheduling with someone in Nashville). A state outline map alone does not help if the user does not know where cities fall relative to the timezone border.
+
+### 15.2 Principles
+
+1. **Cities over geography** — lead with 2–4 recognizable city names per variant
+2. **City search bypasses picker** — `nashville` → instant answer; `tennessee` → picker
+3. **Offline only** — bundled city index; no geocoding APIs
+4. **Map is optional** — supplement, never the primary decision UI
+5. **Same pin model** — still pin variant `id`; city data is for search/display only
+
+### 15.3 Data model
+
+#### Variant extension (in `MULTI_ZONE_GROUPS` or `data/cities.js`)
+
+```js
+{
+  id: 'us-tn-central',
+  sublabel: 'Nashville, Memphis',           // primary label (city-led)
+  regionHint: 'Middle & western Tennessee',   // secondary subtitle
+  tz: 'America/Chicago',
+  cities: ['Nashville', 'Memphis', 'Clarksville', 'Murfreesboro'],
+}
+```
+
+#### City index entry
+
+```js
+{
+  id: 'city-nashville-tn',
+  name: 'Nashville',
+  stateCode: 'TN',
+  variantId: 'us-tn-central',
+  aliases: ['nashville tn'],                // optional
+}
+```
+
+#### Search priority (top match wins)
+
+1. Exact city match → single variant answer
+2. State name / code match → multi-variant picker (city-labeled rows)
+3. Region or partial state match → same as state
+4. No match → empty answer card
+
+### 15.4 Answer card UI (multi-variant)
+
+```
+Where in Tennessee?
+
+┌──────────────────────────────────────────┐
+│ Nashville, Memphis              12:34 PM │
+│ Middle & western Tennessee · CST         │
+│                               [ Pin ]    │
+├──────────────────────────────────────────┤
+│ Knoxville, Chattanooga           1:34 PM │
+│ East Tennessee · EST                     │
+│                               [ Pin ]    │
+└──────────────────────────────────────────┘
+  1 hr difference — pick the city they're in.
+  [ Search a city ]    [ Show map ]  (map: Phase 5D)
+```
+
+- **Pin** unchanged — explicit only
+- **Search a city** expands inline list filtered to that state’s cities (Phase 5C)
+- **Show map** collapsed by default; static SVG with city dots (Phase 5D)
+
+### 15.5 Seed city lists (12 split states)
+
+Anchor cities only — 3–5 per variant. Verify against IANA zones before shipping.
+
+| State | Variant | Anchor cities | Zone |
+|-------|---------|---------------|------|
+| TN | central | Nashville, Memphis, Clarksville | Central |
+| TN | eastern | Knoxville, Chattanooga, Tri-Cities | Eastern |
+| TX | central | Houston, Dallas, San Antonio, Austin | Central |
+| TX | mountain | El Paso | Mountain |
+| FL | eastern | Miami, Orlando, Tampa, Jacksonville | Eastern |
+| FL | central | Pensacola, Panama City | Central |
+| IN | eastern | Indianapolis, Fort Wayne | Eastern |
+| IN | central | Evansville, Gary | Central |
+| KY | eastern | Louisville, Lexington | Eastern |
+| KY | central | Bowling Green, Owensboro | Central |
+| MI | eastern | Detroit, Grand Rapids, Ann Arbor | Eastern |
+| MI | central | Iron Mountain, Menominee area | Central |
+| AK | anchorage | Anchorage, Fairbanks, Juneau | Alaska |
+| AK | aleutian | Unalaska, Adak | Hawaii-Aleutian |
+| ID | mountain | Boise, Idaho Falls | Mountain |
+| ID | pacific | Coeur d'Alene | Pacific |
+| KS | central | Wichita, Kansas City, Topeka | Central |
+| KS | mountain | Goodland (west) | Mountain |
+| NE | central | Omaha, Lincoln | Central |
+| NE | mountain | Scottsbluff, Chadron | Mountain |
+| ND | central | Fargo, Bismarck | Central |
+| ND | mountain | Dickinson, Williston | Mountain |
+| SD | central | Sioux Falls, Pierre | Central |
+| SD | mountain | Rapid City | Mountain |
+
+> **Note:** City lists are UX hints, not legal timezone boundaries. Prefer widely known cities; tune copy after user feedback.
+
+### 15.6 Files to add/change
+
+| File | Change |
+|------|--------|
+| `data/cities.js` | City index + `resolveCityQuery(query)` |
+| `data/locations.js` | Add `cities`, `regionHint` to variants; city-led `sublabel` |
+| `js/search.js` | City-first match before catalog scan |
+| `popup.js` | Render city labels, same-time/diff helper, browse-cities expand |
+| `styles/popup.css` | Variant subtitles, browse list, optional map container |
+| `scripts/verify-search.mjs` | Tests: `nashville`, `tennessee`, `memphis` |
+| `assets/maps/` (optional) | Static SVGs per split state (Phase 5D) |
+
+### 15.7 Out of scope (v1)
+
+- Full city database (every US city)
+- ZIP code lookup
+- Interactive slippy maps / tile servers
+- Auto-detect user city within state
+- Disambiguating duplicate city names across states (v2: show state in picker)
+
+### 15.8 Success criteria
+
+- [ ] User in Texas can find Tennessee meeting time by typing `nashville` without knowing regions
+- [ ] User typing `tennessee` sees city names, not “eastern counties”
+- [ ] No network requests; all city data bundled
+- [ ] Existing pins and variant ids unchanged (display copy only + new search paths)
+
+---
+
 ## 13. Implementation Prompt (Handoff)
 
 Use this block when generating or reviewing code:
 
-> **Semantics:** The slider sets a simulated instant (`now + offset`). Per-card "+N hrs vs you" is the DST-aware difference between that location's zone and the user's local zone **at that instant**, not the slider value.
-> **Data:** 50 US locations with stable `id`, IANA `tz`, and `note` for multi-zone states. Pins store ids only. Max 12 pins, no duplicates.
-> **UI:** Pinned list always visible; search filters an add-list only. First run seeds default pins. Scrub not persisted.
-> **Tech:** `Intl.DateTimeFormat` only; interval ticks at 1s only when scrub is 0; clear interval on popup close.
-> **CSS:** Local `popup.css` (no CDN) for MV3 CSP compliance.
+> **Semantics:** The slider sets a simulated instant (`now + offset`). Per-card "+N hrs vs you" is DST-aware at `displayTime`.
+> **UI:** Saved-first; compact header search; single answer card for lookup; explicit Pin only.
+> **Multi-zone:** City-labeled variant rows; city search resolves directly; state search shows picker.
+> **Data:** Variant `id` pins; offline city index for 12 split states; no APIs.
+> **Tech:** `Intl.DateTimeFormat`; tick at scrub 0 only; local CSS.
 
 ---
 
@@ -423,7 +593,10 @@ Use this block when generating or reviewing code:
 | Search UI | Compact input in header (top-right) |
 | Search results | Single answer card under search (top match), not a dropdown list |
 | Pinning | Explicit **Pin** button only; search never auto-pins |
-| Multi-zone | **Where in {State}?** inside the answer card |
+| Multi-zone | **Where in {State}?** with **city-led labels** + optional browse/map |
+| City search | `nashville` → variant directly; `tennessee` → picker |
+| Variant copy | Anchor cities primary; region hint secondary |
+| Map | Optional collapsed SVG (Phase 5D); never required to pick |
 | Slider meaning | Simulated instant, not per-zone offset |
 | Card offset badge | vs local at `displayTime` |
 | State → timezone | Multi-zone variants for 12 states; legacy ids migrate |

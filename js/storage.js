@@ -5,7 +5,7 @@ export const MAX_PINS = 12;
 
 /** @typedef {{ id: string, cityLabel?: string, pinnedAt: number }} PinEntry */
 
-const STORAGE_KEYS = ['pins', 'use24Hour', 'defaultPinsApplied'];
+const STORAGE_KEYS = ['pins', 'use24Hour', 'defaultPinsApplied', 'lastSearchQuery'];
 
 /**
  * @param {unknown} raw
@@ -97,6 +97,7 @@ function readStorage() {
         pins: Array.isArray(result.pins) ? result.pins : [],
         use24Hour: Boolean(result.use24Hour),
         defaultPinsApplied: Boolean(result.defaultPinsApplied),
+        lastSearchQuery: typeof result.lastSearchQuery === 'string' ? result.lastSearchQuery : '',
       });
     });
   });
@@ -154,6 +155,15 @@ export async function setPins(pins) {
 
 export async function setPrefs(partial) {
   await writeStorage(partial);
+}
+
+export async function getLastSearchQuery() {
+  const { lastSearchQuery } = await readStorage();
+  return lastSearchQuery.trim();
+}
+
+export async function setLastSearchQuery(query) {
+  await writeStorage({ lastSearchQuery: query.trim() });
 }
 
 /**

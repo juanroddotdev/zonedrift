@@ -9,9 +9,11 @@ import {
   MAX_PINS,
   addPin,
   applyFirstRunDefaults,
+  getLastSearchQuery,
   getPins,
   getPrefs,
   removePin,
+  setLastSearchQuery,
 } from './js/storage.js';
 import {
   formatClock,
@@ -175,6 +177,12 @@ function expandSearchResults(results) {
   return items.slice(0, MAX_SUGGESTIONS);
 }
 
+async function clearSearchQuery() {
+  searchInput.value = '';
+  await setLastSearchQuery('');
+  renderSearchSuggestions();
+}
+
 function renderSearchSuggestions() {
   const query = searchInput.value.trim();
   searchSuggestions.replaceChildren('');
@@ -191,7 +199,7 @@ function renderSearchSuggestions() {
 
   if (results.length === 0) {
     const empty = document.createElement('p');
-    empty.className = 'search-suggestions__empty';
+    empty.className = 'search-results__empty';
     empty.textContent = 'No matches';
     searchSuggestions.appendChild(empty);
     return;
@@ -217,9 +225,8 @@ async function handleAddPin(locationId, options = {}) {
   }
 
   cachedPins = await getPins();
-  searchInput.value = '';
+  await clearSearchQuery();
   renderPinnedList(cachedPins);
-  renderSearchSuggestions();
   updatePinLimitStatus(cachedPins);
 
   const row = pinnedList.querySelector(`[data-location-id="${migratePinId(locationId)}"]`);
@@ -321,7 +328,8 @@ function handleScrubChange() {
   }
 }
 
-function handleSearchInput() {
+async function handleSearchInput() {
+  await setLastSearchQuery(searchInput.value);
   renderSearchSuggestions();
   updatePinLimitStatus();
 }
@@ -334,6 +342,13 @@ async function initApp() {
   const pins = await getPins();
   renderPinnedList(pins);
   updatePinLimitStatus(pins);
+
+  const lastQuery = await getLastSearchQuery();
+  if (lastQuery) {
+    searchInput.value = lastQuery;
+    renderSearchSuggestions();
+  }
+
   searchInput.focus();
 }
 
@@ -350,8 +365,7 @@ searchInput.addEventListener('input', handleSearchInput);
 
 searchInput.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
-    searchInput.value = '';
-    renderSearchSuggestions();
+    clearSearchQuery();
     searchInput.blur();
   }
 });
@@ -371,7 +385,10 @@ document.addEventListener('keydown', (event) => {
   searchInput.select();
 });
 
-window.addEventListener('pagehide', stopTick);
+window.addEventListener('pagehide', () => {
+  stopTick();
+  void setLastSearchQuery(searchInput.value);
+});
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') {

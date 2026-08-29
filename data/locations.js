@@ -408,11 +408,14 @@ export function getGroupVariants(groupId, pinnedIds = []) {
     .filter((location) => location && !pinnedSet.has(location.id));
 }
 
-export function resolvePinnedLocations(pinIds) {
+export function resolvePinnedLocations(pins) {
   const seen = new Set();
 
-  return pinIds
-    .map((id) => migratePinId(id))
+  return pins
+    .map((pin) => {
+      const id = typeof pin === 'string' ? migratePinId(pin) : migratePinId(pin.id);
+      return id;
+    })
     .filter((id) => {
       if (seen.has(id)) {
         return false;

@@ -21,3 +21,11 @@ export function getLocationRowLabel(location, cityLabel) {
 export function formatLocationRowMeta(abbrev, offsetLabel) {
   return `${abbrev} · ${offsetLabel}`;
 }
+
+/**
+ * @param {{ cityLabel?: string } | undefined} pin
+ * @param {import('../data/locations.js').Location} location
+ */
+export function getPinDisplayLabel(pin, location) {
+  return getLocationRowLabel(location, pin?.cityLabel);
+}

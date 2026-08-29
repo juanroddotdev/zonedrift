@@ -3,7 +3,7 @@
  * Pins reference stable `id` values; resolve full objects at runtime.
  */
 
-/** @typedef {{ id: string, sublabel: string, tz: string, note?: string }} ZoneVariantDef */
+/** @typedef {{ id: string, sublabel: string, regionHint: string, tz: string, cities: string[], note?: string }} ZoneVariantDef */
 /** @typedef {{ name: string, code: string, region: string, variants: ZoneVariantDef[] }} MultiZoneGroupDef */
 
 /** @type {Record<string, MultiZoneGroupDef>} */
@@ -13,8 +13,20 @@ export const MULTI_ZONE_GROUPS = {
     code: 'AK',
     region: 'West',
     variants: [
-      { id: 'us-ak-anchorage', sublabel: 'Most of Alaska', tz: 'America/Anchorage' },
-      { id: 'us-ak-aleutian', sublabel: 'Aleutian Islands', tz: 'America/Adak' },
+      {
+        id: 'us-ak-anchorage',
+        sublabel: 'Anchorage, Fairbanks, Juneau',
+        regionHint: 'Most of Alaska',
+        tz: 'America/Anchorage',
+        cities: ['Anchorage', 'Fairbanks', 'Juneau', 'Sitka'],
+      },
+      {
+        id: 'us-ak-aleutian',
+        sublabel: 'Unalaska, Adak',
+        regionHint: 'Aleutian Islands',
+        tz: 'America/Adak',
+        cities: ['Unalaska', 'Adak'],
+      },
     ],
   },
   'us-fl': {
@@ -22,8 +34,20 @@ export const MULTI_ZONE_GROUPS = {
     code: 'FL',
     region: 'South',
     variants: [
-      { id: 'us-fl-eastern', sublabel: 'Most of Florida', tz: 'America/New_York' },
-      { id: 'us-fl-central', sublabel: 'Panhandle', tz: 'America/Chicago' },
+      {
+        id: 'us-fl-eastern',
+        sublabel: 'Miami, Orlando, Tampa',
+        regionHint: 'Most of Florida',
+        tz: 'America/New_York',
+        cities: ['Miami', 'Orlando', 'Tampa', 'Jacksonville', 'Fort Lauderdale'],
+      },
+      {
+        id: 'us-fl-central',
+        sublabel: 'Pensacola, Panama City',
+        regionHint: 'Florida panhandle',
+        tz: 'America/Chicago',
+        cities: ['Pensacola', 'Panama City'],
+      },
     ],
   },
   'us-id': {
@@ -31,8 +55,20 @@ export const MULTI_ZONE_GROUPS = {
     code: 'ID',
     region: 'West',
     variants: [
-      { id: 'us-id-mountain', sublabel: 'Most of Idaho', tz: 'America/Boise' },
-      { id: 'us-id-pacific', sublabel: 'Northern panhandle', tz: 'America/Los_Angeles' },
+      {
+        id: 'us-id-mountain',
+        sublabel: 'Boise, Idaho Falls',
+        regionHint: 'Most of Idaho',
+        tz: 'America/Boise',
+        cities: ['Boise', 'Idaho Falls', 'Pocatello'],
+      },
+      {
+        id: 'us-id-pacific',
+        sublabel: "Coeur d'Alene",
+        regionHint: 'Northern panhandle',
+        tz: 'America/Los_Angeles',
+        cities: ["Coeur d'Alene"],
+      },
     ],
   },
   'us-in': {
@@ -40,8 +76,20 @@ export const MULTI_ZONE_GROUPS = {
     code: 'IN',
     region: 'Midwest',
     variants: [
-      { id: 'us-in-eastern', sublabel: 'Most of Indiana', tz: 'America/Indiana/Indianapolis' },
-      { id: 'us-in-central', sublabel: 'NW & SW counties', tz: 'America/Chicago' },
+      {
+        id: 'us-in-eastern',
+        sublabel: 'Indianapolis, Fort Wayne',
+        regionHint: 'Most of Indiana',
+        tz: 'America/Indiana/Indianapolis',
+        cities: ['Indianapolis', 'Fort Wayne', 'Bloomington'],
+      },
+      {
+        id: 'us-in-central',
+        sublabel: 'Evansville, Gary',
+        regionHint: 'NW & SW counties',
+        tz: 'America/Chicago',
+        cities: ['Evansville', 'Gary', 'Terre Haute'],
+      },
     ],
   },
   'us-ks': {
@@ -49,8 +97,20 @@ export const MULTI_ZONE_GROUPS = {
     code: 'KS',
     region: 'Midwest',
     variants: [
-      { id: 'us-ks-central', sublabel: 'Most of Kansas', tz: 'America/Chicago' },
-      { id: 'us-ks-mountain', sublabel: 'Western counties', tz: 'America/Denver' },
+      {
+        id: 'us-ks-central',
+        sublabel: 'Wichita, Kansas City, Topeka',
+        regionHint: 'Most of Kansas',
+        tz: 'America/Chicago',
+        cities: ['Wichita', 'Kansas City', 'Topeka', 'Overland Park'],
+      },
+      {
+        id: 'us-ks-mountain',
+        sublabel: 'Goodland',
+        regionHint: 'Western Kansas',
+        tz: 'America/Denver',
+        cities: ['Goodland'],
+      },
     ],
   },
   'us-ky': {
@@ -58,8 +118,20 @@ export const MULTI_ZONE_GROUPS = {
     code: 'KY',
     region: 'South',
     variants: [
-      { id: 'us-ky-eastern', sublabel: 'Most of Kentucky', tz: 'America/New_York' },
-      { id: 'us-ky-central', sublabel: 'Western counties', tz: 'America/Chicago' },
+      {
+        id: 'us-ky-eastern',
+        sublabel: 'Louisville, Lexington',
+        regionHint: 'Most of Kentucky',
+        tz: 'America/New_York',
+        cities: ['Louisville', 'Lexington', 'Frankfort'],
+      },
+      {
+        id: 'us-ky-central',
+        sublabel: 'Bowling Green, Owensboro',
+        regionHint: 'Western Kentucky',
+        tz: 'America/Chicago',
+        cities: ['Bowling Green', 'Owensboro'],
+      },
     ],
   },
   'us-mi': {
@@ -67,8 +139,20 @@ export const MULTI_ZONE_GROUPS = {
     code: 'MI',
     region: 'Midwest',
     variants: [
-      { id: 'us-mi-eastern', sublabel: 'Most of Michigan', tz: 'America/Detroit' },
-      { id: 'us-mi-central', sublabel: 'Upper Peninsula west', tz: 'America/Menominee' },
+      {
+        id: 'us-mi-eastern',
+        sublabel: 'Detroit, Grand Rapids, Ann Arbor',
+        regionHint: 'Most of Michigan',
+        tz: 'America/Detroit',
+        cities: ['Detroit', 'Grand Rapids', 'Ann Arbor', 'Lansing'],
+      },
+      {
+        id: 'us-mi-central',
+        sublabel: 'Iron Mountain, Menominee',
+        regionHint: 'Western Upper Peninsula',
+        tz: 'America/Menominee',
+        cities: ['Iron Mountain', 'Menominee'],
+      },
     ],
   },
   'us-nd': {
@@ -76,8 +160,20 @@ export const MULTI_ZONE_GROUPS = {
     code: 'ND',
     region: 'Midwest',
     variants: [
-      { id: 'us-nd-central', sublabel: 'Most of North Dakota', tz: 'America/Chicago' },
-      { id: 'us-nd-mountain', sublabel: 'Southwest', tz: 'America/Denver' },
+      {
+        id: 'us-nd-central',
+        sublabel: 'Fargo, Bismarck',
+        regionHint: 'Most of North Dakota',
+        tz: 'America/Chicago',
+        cities: ['Fargo', 'Bismarck', 'Grand Forks'],
+      },
+      {
+        id: 'us-nd-mountain',
+        sublabel: 'Dickinson, Williston',
+        regionHint: 'Southwest North Dakota',
+        tz: 'America/Denver',
+        cities: ['Dickinson', 'Williston'],
+      },
     ],
   },
   'us-ne': {
@@ -85,8 +181,20 @@ export const MULTI_ZONE_GROUPS = {
     code: 'NE',
     region: 'Midwest',
     variants: [
-      { id: 'us-ne-central', sublabel: 'Most of Nebraska', tz: 'America/Chicago' },
-      { id: 'us-ne-mountain', sublabel: 'Western counties', tz: 'America/Denver' },
+      {
+        id: 'us-ne-central',
+        sublabel: 'Omaha, Lincoln',
+        regionHint: 'Most of Nebraska',
+        tz: 'America/Chicago',
+        cities: ['Omaha', 'Lincoln', 'Bellevue'],
+      },
+      {
+        id: 'us-ne-mountain',
+        sublabel: 'Scottsbluff, Chadron',
+        regionHint: 'Western Nebraska',
+        tz: 'America/Denver',
+        cities: ['Scottsbluff', 'Chadron'],
+      },
     ],
   },
   'us-sd': {
@@ -94,8 +202,20 @@ export const MULTI_ZONE_GROUPS = {
     code: 'SD',
     region: 'Midwest',
     variants: [
-      { id: 'us-sd-central', sublabel: 'Most of South Dakota', tz: 'America/Chicago' },
-      { id: 'us-sd-mountain', sublabel: 'Western counties', tz: 'America/Denver' },
+      {
+        id: 'us-sd-central',
+        sublabel: 'Sioux Falls, Pierre',
+        regionHint: 'Most of South Dakota',
+        tz: 'America/Chicago',
+        cities: ['Sioux Falls', 'Pierre', 'Brookings'],
+      },
+      {
+        id: 'us-sd-mountain',
+        sublabel: 'Rapid City',
+        regionHint: 'Western South Dakota',
+        tz: 'America/Denver',
+        cities: ['Rapid City', 'Spearfish'],
+      },
     ],
   },
   'us-tn': {
@@ -103,8 +223,20 @@ export const MULTI_ZONE_GROUPS = {
     code: 'TN',
     region: 'South',
     variants: [
-      { id: 'us-tn-central', sublabel: 'Most of Tennessee', tz: 'America/Chicago' },
-      { id: 'us-tn-eastern', sublabel: 'Eastern counties', tz: 'America/New_York' },
+      {
+        id: 'us-tn-central',
+        sublabel: 'Nashville, Memphis',
+        regionHint: 'Middle & western Tennessee',
+        tz: 'America/Chicago',
+        cities: ['Nashville', 'Memphis', 'Clarksville', 'Murfreesboro'],
+      },
+      {
+        id: 'us-tn-eastern',
+        sublabel: 'Knoxville, Chattanooga',
+        regionHint: 'East Tennessee',
+        tz: 'America/New_York',
+        cities: ['Knoxville', 'Chattanooga', 'Johnson City'],
+      },
     ],
   },
   'us-tx': {
@@ -112,8 +244,20 @@ export const MULTI_ZONE_GROUPS = {
     code: 'TX',
     region: 'South',
     variants: [
-      { id: 'us-tx-central', sublabel: 'Most of Texas', tz: 'America/Chicago' },
-      { id: 'us-tx-mountain', sublabel: 'El Paso area', tz: 'America/Denver' },
+      {
+        id: 'us-tx-central',
+        sublabel: 'Houston, Dallas, Austin',
+        regionHint: 'Most of Texas',
+        tz: 'America/Chicago',
+        cities: ['Houston', 'Dallas', 'Austin', 'San Antonio', 'Fort Worth'],
+      },
+      {
+        id: 'us-tx-mountain',
+        sublabel: 'El Paso',
+        regionHint: 'Far west Texas',
+        tz: 'America/Denver',
+        cities: ['El Paso'],
+      },
     ],
   },
 };
@@ -172,6 +316,8 @@ function buildVariantLocations() {
         region: group.region,
         tz: variant.tz,
         sublabel: variant.sublabel,
+        regionHint: variant.regionHint,
+        cities: variant.cities,
         note: variant.note,
       });
     }
@@ -297,4 +443,19 @@ export function getLocationLabel(location) {
   }
 
   return `${location.name} (${location.code})`;
+}
+
+export function getCitiesForGroup(groupId) {
+  const group = MULTI_ZONE_GROUPS[groupId];
+  if (!group) {
+    return [];
+  }
+
+  return group.variants.flatMap((variant) =>
+    variant.cities.map((city) => ({
+      name: city,
+      variantId: variant.id,
+      stateCode: group.code,
+    })),
+  );
 }

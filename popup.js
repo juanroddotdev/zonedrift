@@ -2,6 +2,7 @@
  * ZoneDrift popup — saved-first layout with lookup answer card.
  */
 
+import { filterCitiesInGroup } from './data/cities.js';
 import {
   getLocationById,
   getLocationLabel,
@@ -23,6 +24,7 @@ import {
   formatScrubBadge,
   formatZoneAbbrev,
   getDisplayTime,
+  offsetBetweenZones,
   offsetVsLocal,
 } from './js/time-engine.js';
 
@@ -39,6 +41,8 @@ const statusMessage = document.getElementById('status-message');
 let cachedPinIds = [];
 let use24Hour = false;
 let tickInterval = null;
+let browseCitiesOpen = false;
+let activeBrowseGroupId = null;
 
 function updateScrubUi() {
   const hours = Number(scrubSlider.value);
@@ -142,14 +146,69 @@ function createPinButton(location, label) {
   return button;
 }
 
-function renderSingleAnswer(location) {
+function getVariantDiffMessage(variants, displayTime) {
+  if (variants.length < 2) {
+    return '';
+  }
+
+  const diffHours = Math.abs(offsetBetweenZones(variants[0].tz, variants[1].tz, displayTime));
+
+  if (diffHours === 0) {
+    return 'Same time right now — either works.';
+  }
+
+  if (diffHours === 0.5) {
+    return '30 minute difference — pick the city your contact is in.';
+  }
+
+  const hours = Number.isInteger(diffHours) ? diffHours : diffHours.toFixed(1);
+  const unit = diffHours === 1 ? 'hour' : 'hours';
+  return `${hours} ${unit} difference — pick the city your contact is in.`;
+}
+
+function renderCityBrowseList(container, groupId, filterText = '') {
+  const cities = filterCitiesInGroup(groupId, filterText);
+  container.innerHTML = '';
+
+  for (const city of cities) {
+    const location = getLocationById(city.locationId);
+    if (!location) {
+      continue;
+    }
+
+    const row = document.createElement('li');
+    row.className = 'answer-card__city-item';
+    row.dataset.locationId = location.id;
+    row.innerHTML = `
+      <div class="answer-card__city-item-body">
+        <span class="answer-card__city-name">${city.name}</span>
+        <span class="answer-card__city-time">
+          <span data-role="time">—:—:— —</span>
+          <span data-role="abbrev">—</span>
+        </span>
+      </div>
+    `;
+    row.appendChild(createPinButton(location, 'Pin'));
+    container.appendChild(row);
+    updateLocationTimeElements(row, location, getDisplayTime(Number(scrubSlider.value)));
+  }
+}
+
+function renderSingleAnswer(location, options = {}) {
   const label = getLocationLabel(location);
   const shell = document.createElement('article');
   shell.className = 'answer-card answer-card--single';
   shell.dataset.locationId = location.id;
+
+  const cityHint = options.source === 'city'
+    ? `<p class="answer-card__hint">Matched city in ${location.name}</p>`
+    : '';
+
   shell.innerHTML = `
     <div class="answer-card__body">
+      ${cityHint}
       <h3 class="answer-card__title">${label} · <span data-role="abbrev">—</span></h3>
+      ${location.regionHint ? `<p class="answer-card__region-hint">${location.regionHint}</p>` : ''}
       <p class="answer-card__time" data-role="time">—:—:— —</p>
       <p class="answer-card__offset" data-role="offset">—</p>
     </div>
@@ -161,11 +220,28 @@ function renderSingleAnswer(location) {
 }
 
 function renderGroupAnswer(groupResult) {
+  const displayTime = getDisplayTime(Number(scrubSlider.value));
   const shell = document.createElement('article');
   shell.className = 'answer-card answer-card--group';
   shell.innerHTML = `
     <p class="answer-card__heading">Where in ${groupResult.name}?</p>
+    <p class="answer-card__helper">${getVariantDiffMessage(groupResult.variants, displayTime)}</p>
     <div class="answer-card__variants"></div>
+    <div class="answer-card__browse">
+      <button type="button" class="btn btn--ghost btn--compact answer-card__browse-toggle">
+        ${browseCitiesOpen && activeBrowseGroupId === groupResult.groupId ? 'Hide cities' : 'Browse cities'}
+      </button>
+      <div class="answer-card__city-browse ${browseCitiesOpen && activeBrowseGroupId === groupResult.groupId ? '' : 'hidden'}">
+        <input
+          type="search"
+          class="answer-card__city-filter"
+          placeholder="Filter cities in ${groupResult.name}…"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <ul class="answer-card__city-list"></ul>
+      </div>
+    </div>
   `;
 
   const variantsRoot = shell.querySelector('.answer-card__variants');
@@ -177,6 +253,7 @@ function renderGroupAnswer(groupResult) {
     row.innerHTML = `
       <div class="answer-card__variant-body">
         <span class="answer-card__variant-label">${location.sublabel}</span>
+        <span class="answer-card__variant-hint">${location.regionHint ?? ''}</span>
         <span class="answer-card__variant-time">
           <span data-role="time">—:—:— —</span>
           <span data-role="abbrev">—</span>
@@ -186,7 +263,31 @@ function renderGroupAnswer(groupResult) {
     `;
     row.appendChild(createPinButton(location, 'Pin'));
     variantsRoot.appendChild(row);
-    updateLocationTimeElements(row, location, getDisplayTime(Number(scrubSlider.value)));
+    updateLocationTimeElements(row, location, displayTime);
+  }
+
+  const browseToggle = shell.querySelector('.answer-card__browse-toggle');
+  const cityBrowse = shell.querySelector('.answer-card__city-browse');
+  const cityFilter = shell.querySelector('.answer-card__city-filter');
+  const cityList = shell.querySelector('.answer-card__city-list');
+
+  browseToggle.addEventListener('click', () => {
+    if (browseCitiesOpen && activeBrowseGroupId === groupResult.groupId) {
+      browseCitiesOpen = false;
+      activeBrowseGroupId = null;
+    } else {
+      browseCitiesOpen = true;
+      activeBrowseGroupId = groupResult.groupId;
+    }
+    renderAnswerCard();
+  });
+
+  if (browseCitiesOpen && activeBrowseGroupId === groupResult.groupId) {
+    renderCityBrowseList(cityList, groupResult.groupId, cityFilter.value);
+    cityFilter.addEventListener('input', () => {
+      renderCityBrowseList(cityList, groupResult.groupId, cityFilter.value);
+    });
+    cityBrowse.classList.remove('hidden');
   }
 
   answerCard.replaceChildren(shell);
@@ -212,7 +313,7 @@ function renderAnswerCard() {
   const topResult = results[0];
 
   if (topResult.type === 'single') {
-    renderSingleAnswer(topResult.location);
+    renderSingleAnswer(topResult.location, { source: topResult.source });
     return;
   }
 
@@ -298,6 +399,8 @@ function handleScrubChange() {
 }
 
 function handleSearchInput() {
+  browseCitiesOpen = false;
+  activeBrowseGroupId = null;
   renderAnswerCard();
   updatePinLimitStatus();
 }

@@ -6,6 +6,7 @@
 import {
   formatClock,
   formatOffsetLabel,
+  formatOffsetShort,
   formatScrubBadge,
   formatZoneAbbrev,
   getDisplayTime,
@@ -72,6 +73,12 @@ for (const [hours, expected] of badgeExpectations) {
   const actual = formatScrubBadge(hours);
   assert(actual === expected, `formatScrubBadge(${hours}) -> ${expected}`);
 }
+
+console.log('\n--- Compact offset formatter ---');
+assert(formatOffsetShort(0) === 'same time', 'formatOffsetShort(0)');
+assert(formatOffsetShort(1) === '+1h', 'formatOffsetShort(+1)');
+assert(formatOffsetShort(-2) === '-2h', 'formatOffsetShort(-2)');
+assert(formatOffsetShort(0.5) === '+30m', 'formatOffsetShort(+0.5)');
 
 console.log('\n--- Display time + offset ---');
 const displayTime = getDisplayTime(3);

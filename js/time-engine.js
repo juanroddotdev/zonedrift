@@ -76,6 +76,25 @@ export function offsetBetweenZones(tzA, tzB, displayTime) {
   return (offsetA - offsetB) / 60;
 }
 
+export function formatOffsetShort(deltaHours) {
+  if (deltaHours === 0) {
+    return 'same time';
+  }
+
+  const sign = deltaHours > 0 ? '+' : '-';
+  const abs = Math.abs(deltaHours);
+
+  if (abs === 0.5) {
+    return `${sign}30m`;
+  }
+
+  if (Number.isInteger(abs)) {
+    return `${sign}${abs}h`;
+  }
+
+  return `${sign}${abs}h`;
+}
+
 export function formatOffsetLabel(deltaHours) {
   if (deltaHours === 0) {
     return 'Same time';

@@ -19,6 +19,17 @@
           autocomplete="off"
           spellcheck="false"
         />
+        <button
+          id="planner-toggle"
+          type="button"
+          class="btn btn--ghost planner-toggle"
+          aria-expanded="false"
+          aria-controls="planner-panel"
+          aria-label="Time planner"
+          title="Time planner"
+        >
+          ⏱
+        </button>
       </header>
 
       <p id="status-message" class="status-message hidden" role="status" aria-live="polite"></p>
@@ -27,30 +38,32 @@
         <div id="answer-card" class="answer-card"></div>
       </section>
 
-      <section class="scrubber scrubber--compact" aria-label="Time scrubber">
-        <div class="scrubber__row scrubber__row--compact">
-          <span id="scrub-badge" class="scrubber__badge scrubber__badge--compact">Now</span>
-          <input
-            id="scrub-slider"
-            class="scrubber__slider scrubber__slider--compact"
-            type="range"
-            min="-12"
-            max="12"
-            step="0.5"
-            value="0"
-            aria-label="Hours from now"
-            aria-valuetext="Now"
-          />
-          <button id="scrub-reset" type="button" class="btn btn--ghost btn--compact">Reset</button>
-        </div>
-      </section>
-
       <section class="saved" aria-label="Saved locations">
         <h2 class="section-title">Saved</h2>
         <div id="pinned-list" class="saved__list loc-list">
           <p class="empty-state" id="pinned-empty">
             No saved locations yet — search to preview a place
           </p>
+        </div>
+      </section>
+
+      <section id="planner-panel" class="planner-panel hidden" aria-label="Time planner">
+        <div class="scrubber scrubber--compact">
+          <div class="scrubber__row scrubber__row--compact">
+            <span id="scrub-badge" class="scrubber__badge scrubber__badge--compact">Now</span>
+            <input
+              id="scrub-slider"
+              class="scrubber__slider scrubber__slider--compact"
+              type="range"
+              min="-12"
+              max="12"
+              step="0.5"
+              value="0"
+              aria-label="Hours from now"
+              aria-valuetext="Now"
+            />
+            <button id="scrub-reset" type="button" class="btn btn--ghost btn--compact">Reset</button>
+          </div>
         </div>
       </section>
     </div>

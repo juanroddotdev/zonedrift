@@ -99,6 +99,27 @@ export function resolveCityMatch(query) {
   return getLocationById(topMatches[0].entry.locationId);
 }
 
+/**
+ * Representative city for display when no pin-specific city label is stored.
+ */
+export function getDefaultCityForLocation(locationId) {
+  const location = getLocationById(locationId);
+  if (!location) {
+    return null;
+  }
+
+  if (location.sublabel) {
+    return location.sublabel.split(',')[0].trim();
+  }
+
+  if (location.cities?.[0]) {
+    return location.cities[0];
+  }
+
+  const singleState = SINGLE_STATE_CITIES.find((entry) => entry.locationId === locationId);
+  return singleState?.name ?? null;
+}
+
 export function filterCitiesInGroup(groupId, query) {
   const normalized = normalize(query);
   const cities = [];

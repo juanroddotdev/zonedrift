@@ -3,8 +3,9 @@
  * Run: node scripts/verify-search.mjs
  */
 
-import { resolveCityMatch } from '../data/cities.js';
-import { LOCATIONS } from '../data/locations.js';
+import { getDefaultCityForLocation, resolveCityMatch } from '../data/cities.js';
+import { getLocationById, LOCATIONS } from '../data/locations.js';
+import { getLocationRowLabel } from '../js/display.js';
 import { filterLocations, filterSearchResults } from '../js/search.js';
 
 let failures = 0;
@@ -55,6 +56,10 @@ const noResults = filterSearchResults('zzzz', []);
 assert(noResults.length === 0, 'nonsense query returns empty');
 
 assert(LOCATIONS.length === 62, 'location catalog has 62 pinnable entries');
+
+const illinois = getLocationById('us-il');
+assert(getLocationRowLabel(illinois) === 'Chicago, IL', 'illinois row label uses default city');
+assert(getDefaultCityForLocation('us-fl-eastern') === 'Miami', 'florida eastern default city is Miami');
 
 if (failures > 0) {
   process.exitCode = 1;

@@ -79,6 +79,10 @@ assert(formatOffsetShort(0) === 'same time', 'formatOffsetShort(0)');
 assert(formatOffsetShort(1) === '+1h', 'formatOffsetShort(+1)');
 assert(formatOffsetShort(-2) === '-2h', 'formatOffsetShort(-2)');
 assert(formatOffsetShort(0.5) === '+30m', 'formatOffsetShort(+0.5)');
+assert(
+  formatOffsetShort(0.9999999999999996) === '+1h',
+  'formatOffsetShort snaps float drift to whole hours',
+);
 
 console.log('\n--- Display time + offset ---');
 const displayTime = getDisplayTime(3);

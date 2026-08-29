@@ -1,4 +1,5 @@
 import { getDefaultCityForLocation } from '../data/cities.js';
+import { formatOffsetShort } from './time-engine.js';
 
 /**
  * Primary label for a location list row (city-first when a default city exists).
@@ -16,10 +17,10 @@ export function getLocationRowLabel(location, cityLabel) {
 }
 
 /**
- * Muted subline under the row label: zone abbrev + offset vs local.
+ * Muted subline under the row label: zone abbrev + compact offset.
  */
-export function formatLocationRowMeta(abbrev, offsetLabel) {
-  return `${abbrev} · ${offsetLabel}`;
+export function formatLocationRowMeta(abbrev, deltaHours) {
+  return `${abbrev} · ${formatOffsetShort(deltaHours)}`;
 }
 
 /**

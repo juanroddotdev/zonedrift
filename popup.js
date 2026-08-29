@@ -1,5 +1,5 @@
 /**
- * ZoneDrift popup — unified location rows with search dropdown (Phase 8B).
+ * ZoneDrift popup — unified list UI (Phase 8).
  */
 
 import { getLocationById, migratePinId } from './data/locations.js';
@@ -137,7 +137,7 @@ function updateLocationTimeElements(root, location, displayTime) {
   }
 
   if (metaEl) {
-    metaEl.textContent = formatLocationRowMeta(abbrev, offsetLabel);
+    metaEl.textContent = formatLocationRowMeta(abbrev, offsetVsLocal(location.tz, displayTime));
   }
 }
 
@@ -354,6 +354,21 @@ searchInput.addEventListener('keydown', (event) => {
     renderSearchSuggestions();
     searchInput.blur();
   }
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) {
+    return;
+  }
+
+  const target = event.target;
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+    return;
+  }
+
+  event.preventDefault();
+  searchInput.focus();
+  searchInput.select();
 });
 
 window.addEventListener('pagehide', stopTick);

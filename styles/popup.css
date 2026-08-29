@@ -45,14 +45,8 @@ body {
   width: var(--popup-width);
   max-height: var(--popup-max-height);
   padding: 12px 14px 10px;
-  gap: 10px;
+  gap: 8px;
   overflow: hidden;
-}
-
-/* Header (legacy helpers removed) */
-
-.header--compact .header__title {
-  font-size: 15px;
 }
 
 /* Scrubber */
@@ -170,10 +164,15 @@ body {
 .planner-panel {
   flex-shrink: 0;
   margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
 }
 
 .planner-panel .scrubber--compact {
   margin: 0;
+  padding: 4px 0 0;
+  background: transparent;
+  border: none;
 }
 
 /* Search dropdown */
@@ -194,7 +193,7 @@ body {
   background: var(--color-bg);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28);
 }
 
 .search-suggestions .loc-row {
@@ -221,17 +220,6 @@ body {
 
 .status-message.hidden {
   display: none;
-}
-
-/* Section titles */
-
-.section-title {
-  margin: 0 0 8px;
-  color: var(--color-muted);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 /* Saved list */
@@ -263,19 +251,11 @@ body {
 
 .empty-state {
   margin: 0;
-  padding: 24px 12px;
+  padding: 28px 8px;
   text-align: center;
   color: var(--color-muted);
   font-size: 12px;
-  background: var(--color-surface);
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-md);
-}
-
-.empty-state--compact {
-  padding: 12px;
-  margin-top: 4px;
-  font-size: 11px;
+  line-height: 1.45;
 }
 
 /* Location rows (saved list + search suggestions) */
@@ -289,8 +269,8 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 4px 8px 0;
-  border-bottom: 1px solid var(--color-border);
+  padding: 9px 4px 9px 0;
+  border-bottom: 1px solid rgba(42, 47, 58, 0.65);
 }
 
 .loc-row:last-child {
@@ -317,6 +297,7 @@ body {
   font-size: 13px;
   font-weight: 600;
   line-height: 1.25;
+  letter-spacing: -0.01em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -326,6 +307,7 @@ body {
   font-size: 10px;
   color: var(--color-muted);
   line-height: 1.2;
+  letter-spacing: 0.01em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -333,8 +315,9 @@ body {
 
 .loc-row__time {
   flex-shrink: 0;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
   line-height: 1.2;
   white-space: nowrap;

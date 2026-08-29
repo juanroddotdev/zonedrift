@@ -76,13 +76,21 @@ export function offsetBetweenZones(tzA, tzB, displayTime) {
   return (offsetA - offsetB) / 60;
 }
 
+/** Snap fractional hour offsets to whole minutes (avoids float display glitches). */
+export function normalizeOffsetHours(deltaHours) {
+  const minutes = Math.round(deltaHours * 60);
+  return minutes === 0 ? 0 : minutes / 60;
+}
+
 export function formatOffsetShort(deltaHours) {
-  if (deltaHours === 0) {
+  const hours = normalizeOffsetHours(deltaHours);
+
+  if (hours === 0) {
     return 'same time';
   }
 
-  const sign = deltaHours > 0 ? '+' : '-';
-  const abs = Math.abs(deltaHours);
+  const sign = hours > 0 ? '+' : '-';
+  const abs = Math.abs(hours);
 
   if (abs === 0.5) {
     return `${sign}30m`;
@@ -96,12 +104,14 @@ export function formatOffsetShort(deltaHours) {
 }
 
 export function formatOffsetLabel(deltaHours) {
-  if (deltaHours === 0) {
+  const hours = normalizeOffsetHours(deltaHours);
+
+  if (hours === 0) {
     return 'Same time';
   }
 
-  const sign = deltaHours > 0 ? '+' : '-';
-  const abs = Math.abs(deltaHours);
+  const sign = hours > 0 ? '+' : '-';
+  const abs = Math.abs(hours);
 
   if (abs === 0.5) {
     return `${sign}30 min vs you`;

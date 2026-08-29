@@ -102,7 +102,9 @@ export function filterSearchResults(query, pinnedIds = []) {
  * Filter to unpinned locations only (for add-list style flows).
  */
 export function filterUnpinnedResults(query, pinnedIds = []) {
-  const pinnedSet = new Set(pinnedIds.map(migratePinId));
+  const pinnedSet = new Set(
+    pinnedIds.map((pin) => migratePinId(typeof pin === 'string' ? pin : pin.id)),
+  );
 
   return filterSearchResults(query, pinnedIds).flatMap((result) => {
     if (result.type === 'single') {

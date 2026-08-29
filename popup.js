@@ -2,7 +2,7 @@
  * ZoneDrift popup — unified location rows with search dropdown (Phase 8B).
  */
 
-import { getLocationById, migratePinId, resolvePinnedLocations } from './data/locations.js';
+import { getLocationById, migratePinId } from './data/locations.js';
 import { filterSearchResults } from './js/search.js';
 import { formatLocationRowMeta, getLocationRowLabel } from './js/display.js';
 import {
@@ -35,7 +35,7 @@ const pinnedList = document.getElementById('pinned-list');
 const pinnedEmpty = document.getElementById('pinned-empty');
 const statusMessage = document.getElementById('status-message');
 
-let cachedPinIds = [];
+let cachedPins = [];
 let use24Hour = false;
 let tickInterval = null;
 
@@ -87,12 +87,13 @@ function showStatus(message) {
   statusMessage.classList.toggle('hidden', !message);
 }
 
-function updatePinLimitStatus(pinIds = cachedPinIds) {
-  showStatus(pinIds.length >= MAX_PINS ? `Pin limit reached (${MAX_PINS}).` : '');
+function updatePinLimitStatus(pins = cachedPins) {
+  showStatus(pins.length >= MAX_PINS ? `Pin limit reached (${MAX_PINS}).` : '');
 }
 
 function isPinned(locationId) {
-  return cachedPinIds.includes(migratePinId(locationId));
+  const id = migratePinId(locationId);
+  return cachedPins.some((pin) => pin.id === id);
 }
 
 function stopTick() {
@@ -205,8 +206,8 @@ function renderSearchSuggestions() {
   updateAllTimes();
 }
 
-async function handleAddPin(locationId) {
-  const result = await addPin(locationId);
+async function handleAddPin(locationId, options = {}) {
+  const result = await addPin(locationId, options);
 
   if (!result.ok) {
     if (result.reason === 'max') {
@@ -215,11 +216,11 @@ async function handleAddPin(locationId) {
     return;
   }
 
-  cachedPinIds = await getPins();
+  cachedPins = await getPins();
   searchInput.value = '';
-  renderPinnedList(cachedPinIds);
+  renderPinnedList(cachedPins);
   renderSearchSuggestions();
-  updatePinLimitStatus(cachedPinIds);
+  updatePinLimitStatus(cachedPins);
 
   const row = pinnedList.querySelector(`[data-location-id="${migratePinId(locationId)}"]`);
   row?.scrollIntoView({ block: 'nearest' });
@@ -271,7 +272,7 @@ function createLocationRow(location, options = {}) {
     pinButton.setAttribute('aria-label', pinned ? `${label} saved` : `Add ${label}`);
     pinButton.addEventListener('click', async (event) => {
       event.stopPropagation();
-      await handleAddPin(location.id);
+      await handleAddPin(location.id, { cityLabel });
     });
     row.appendChild(pinButton);
   }
@@ -280,12 +281,11 @@ function createLocationRow(location, options = {}) {
   return row;
 }
 
-function renderPinnedList(pinIds) {
-  cachedPinIds = pinIds;
-  const locations = resolvePinnedLocations(pinIds);
+function renderPinnedList(pins) {
+  cachedPins = pins;
   pinnedList.querySelectorAll('.loc-row').forEach((node) => node.remove());
 
-  if (locations.length === 0) {
+  if (pins.length === 0) {
     pinnedEmpty.classList.remove('hidden');
     stopTick();
     renderSearchSuggestions();
@@ -294,8 +294,16 @@ function renderPinnedList(pinIds) {
 
   pinnedEmpty.classList.add('hidden');
 
-  for (const location of locations) {
-    pinnedList.appendChild(createLocationRow(location, { mode: 'saved' }));
+  for (const pin of pins) {
+    const location = getLocationById(pin.id);
+    if (!location) {
+      continue;
+    }
+
+    pinnedList.appendChild(createLocationRow(location, {
+      mode: 'saved',
+      cityLabel: pin.cityLabel,
+    }));
   }
 
   updateAllTimes();

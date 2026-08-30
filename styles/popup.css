@@ -41,18 +41,6 @@ body {
   line-height: 1.4;
 }
 
-@keyframes app-enter {
-  from {
-    opacity: 0;
-    transform: translateY(-6px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 .app {
   display: flex;
   flex-direction: column;
@@ -61,13 +49,6 @@ body {
   padding: 12px;
   gap: 10px;
   overflow: hidden;
-  animation: app-enter 0.2s ease-out both;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .app {
-    animation: none;
-  }
 }
 
 /* Scrubber */

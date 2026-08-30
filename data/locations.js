@@ -3,6 +3,8 @@
  * Pins reference stable `id` values; resolve full objects at runtime.
  */
 
+import { resolveNearestStateCode } from '../js/geo.js';
+
 /** @typedef {{ id: string, sublabel: string, regionHint: string, tz: string, cities: string[], note?: string }} ZoneVariantDef */
 /** @typedef {{ name: string, code: string, region: string, variants: ZoneVariantDef[] }} MultiZoneGroupDef */
 
@@ -360,16 +362,13 @@ export const PIN_ID_MIGRATIONS = {
 
 export const DEFAULT_HUB_IDS = ['us-ny', 'us-il', 'us-ca'];
 
+/** IANA zones that map to exactly one seed location (not shared across states). */
 export const TZ_PRIMARY_ID = {
-  'America/New_York': 'us-ny',
   'America/Detroit': 'us-mi-eastern',
   'America/Menominee': 'us-mi-central',
-  'America/Chicago': 'us-il',
   'America/Indiana/Indianapolis': 'us-in-eastern',
-  'America/Denver': 'us-co',
   'America/Boise': 'us-id-mountain',
   'America/Phoenix': 'us-az',
-  'America/Los_Angeles': 'us-ca',
   'America/Anchorage': 'us-ak-anchorage',
   'America/Adak': 'us-ak-aleutian',
   'Pacific/Honolulu': 'us-hi',
@@ -427,13 +426,45 @@ export function resolvePinnedLocations(pins) {
     .filter(Boolean);
 }
 
-export function getOnboardingPinIds(userTz) {
+/**
+ * @param {string} stateCode
+ * @param {string} userTz
+ * @returns {string | null}
+ */
+export function getLocationIdForStateCode(stateCode, userTz) {
+  const matches = LOCATIONS.filter((location) => location.code === stateCode);
+  if (matches.length === 0) {
+    return null;
+  }
+
+  const tzMatches = matches.filter((location) => location.tz === userTz);
+  if (tzMatches.length > 0) {
+    return tzMatches[0].id;
+  }
+
+  return matches[0].id;
+}
+
+/**
+ * @param {string} userTz
+ * @param {{ lat: number, lon: number } | null} [coords]
+ * @returns {string[]}
+ */
+export function getOnboardingPinIds(userTz, coords = null) {
+  if (coords) {
+    const stateCode = resolveNearestStateCode(coords.lat, coords.lon);
+    const locationId = stateCode ? getLocationIdForStateCode(stateCode, userTz) : null;
+    if (locationId) {
+      return [locationId];
+    }
+  }
+
   if (TZ_PRIMARY_ID[userTz]) {
     return [TZ_PRIMARY_ID[userTz]];
   }
 
   const matches = getLocationsByTz(userTz);
-  if (matches.length > 0) {
+  if (matches.length === 1) {
     return [matches[0].id];
   }
 

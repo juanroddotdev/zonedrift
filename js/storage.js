@@ -224,7 +224,8 @@ export async function applyFirstRunDefaults() {
   }
 
   const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const hubIds = getOnboardingPinIds(userTz);
+  const coords = await getCurrentPosition();
+  const hubIds = getOnboardingPinIds(userTz, coords);
   const pins = hubIds.map((id, index) => pinEntryFromId(id, Date.now() + index));
 
   await writeStorage({
@@ -233,4 +234,27 @@ export async function applyFirstRunDefaults() {
   });
 
   return pins;
+}
+
+function getCurrentPosition(timeoutMs = 2500) {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve(null);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          lat: position.coords.latitude,
+          lon: position.coords.longitude,
+        });
+      },
+      () => resolve(null),
+      {
+        timeout: timeoutMs,
+        maximumAge: 600_000,
+      },
+    );
+  });
 }
